@@ -16,6 +16,7 @@ class SessionAttendance extends Model
         return ['checked_in_at' => 'datetime'];
     }
 
+    /** @return BelongsTo<Attendee, $this> */
     public function attendee(): BelongsTo
     {
         return $this->belongsTo(Attendee::class);

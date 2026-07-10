@@ -6,6 +6,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class MealVoucherScanRequest extends FormRequest
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return ['qr_token' => ['required', 'string'], 'device_id' => ['nullable', 'string', 'max:255']];

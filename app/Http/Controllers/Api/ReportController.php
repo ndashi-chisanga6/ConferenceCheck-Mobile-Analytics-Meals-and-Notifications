@@ -27,7 +27,7 @@ class ReportController extends ApiController
             ->join('meal_categories', 'meal_categories.id', '=', 'meal_redemptions.meal_category_id')
             ->select('attendees.full_name', 'meal_categories.name', 'meal_redemptions.redeemed_at', 'meal_redemptions.device_id')
             ->get()
-            ->map(fn ($row) => [$row->full_name, $row->name, $row->redeemed_at, $row->device_id])
+            ->map(fn ($row) => [$row->getAttribute('full_name'), $row->getAttribute('name'), $row->redeemed_at, $row->device_id])
             ->all();
 
         return $this->csv('meals.csv', ['Attendee', 'Meal Category', 'Redeemed At', 'Device ID'], $rows);
@@ -58,10 +58,17 @@ class ReportController extends ApiController
         return $this->csv('notifications.csv', ['Title', 'Target Type', 'Status', 'Recipients', 'Sent At'], $rows);
     }
 
+    /**
+     * @param  array<int, string>  $headers
+     * @param  array<int, array<int, mixed>>  $rows
+     */
     private function csv(string $filename, array $headers, array $rows): StreamedResponse
     {
         return response()->streamDownload(function () use ($headers, $rows): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                return;
+            }
             fputcsv($handle, $headers);
             foreach ($rows as $row) {
                 fputcsv($handle, $row);

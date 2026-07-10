@@ -7,6 +7,9 @@ use Illuminate\Validation\Rule;
 
 class DeviceTokenRequest extends FormRequest
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return ['token' => ['required', 'string', 'max:500'], 'platform' => ['required', Rule::in(['android', 'ios', 'web', 'unknown'])]];

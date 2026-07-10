@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Log;
 
 class FirebaseNotificationService
 {
+    /**
+     * @param  array<int, string>  $tokens
+     * @return array{success: bool, demo: bool, sent_count: int}
+     */
     public function send(array $tokens, string $title, string $message): array
     {
         $tokens = array_values(array_filter(array_unique($tokens)));

@@ -14,11 +14,13 @@ class MealVoucher extends Model
         return ['redeemed_at' => 'datetime'];
     }
 
+    /** @return BelongsTo<Attendee, $this> */
     public function attendee(): BelongsTo
     {
         return $this->belongsTo(Attendee::class);
     }
 
+    /** @return BelongsTo<MealCategory, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(MealCategory::class, 'meal_category_id');

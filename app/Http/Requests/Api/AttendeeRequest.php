@@ -2,13 +2,18 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\Attendee;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AttendeeRequest extends FormRequest
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
-        $attendeeId = $this->route('attendee')?->id;
+        $attendee = $this->route('attendee');
+        $attendeeId = $attendee instanceof Attendee ? $attendee->id : null;
 
         return [
             'user_id' => ['nullable', 'exists:users,id'],

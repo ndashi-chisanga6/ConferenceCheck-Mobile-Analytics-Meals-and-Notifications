@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\EventRequest;
 use App\Models\Event;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class EventController extends ApiController
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         $events = $user->role === 'organiser'
@@ -18,7 +19,7 @@ class EventController extends ApiController
         return $this->ok('Events retrieved.', $events);
     }
 
-    public function store(EventRequest $request)
+    public function store(EventRequest $request): JsonResponse
     {
         if ($request->user()->role !== 'organiser') {
             return $this->fail('Only organisers can create events.', null, 403);
@@ -30,19 +31,19 @@ class EventController extends ApiController
         return $this->ok('Event created.', $event, 201);
     }
 
-    public function show(Event $event)
+    public function show(Event $event): JsonResponse
     {
         return $this->ok('Event retrieved.', $event->loadCount(['attendees', 'mealVouchers', 'sessions']));
     }
 
-    public function update(EventRequest $request, Event $event)
+    public function update(EventRequest $request, Event $event): JsonResponse
     {
         $event->update($request->validated());
 
         return $this->ok('Event updated.', $event->fresh());
     }
 
-    public function destroy(Event $event)
+    public function destroy(Event $event): JsonResponse
     {
         $event->delete();
 

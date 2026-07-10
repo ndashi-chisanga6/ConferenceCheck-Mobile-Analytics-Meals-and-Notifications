@@ -22,9 +22,9 @@ class EnsureEventRole
             return $next($request);
         }
 
-        $assignedRole = $event->users()->whereKey($user->id)->first()?->pivot?->role;
+        $assignedRole = $event->users()->whereKey($user->id)->first()?->pivot?->getAttribute('role');
 
-        if ($assignedRole && in_array($assignedRole, $roles, true)) {
+        if (is_string($assignedRole) && in_array($assignedRole, $roles, true)) {
             return $next($request);
         }
 

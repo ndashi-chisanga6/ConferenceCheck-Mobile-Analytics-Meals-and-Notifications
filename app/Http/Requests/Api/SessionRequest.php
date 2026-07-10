@@ -7,6 +7,9 @@ use Illuminate\Validation\Rule;
 
 class SessionRequest extends FormRequest
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
