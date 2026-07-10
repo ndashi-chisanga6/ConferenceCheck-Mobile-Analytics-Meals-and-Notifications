@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -128,6 +128,63 @@ class ConferenceController extends ApiController
 
             return $this->ok('Attendee checked in successfully.', ['duplicate' => false, 'attendee' => $attendee->fresh()]);
         });
+    }
+
+    public function analyticsSummary(Event $event)
+    {
+        $totalAttendees = $event->attendees()->count();
+        $checkedIn = $event->attendees()->whereNotNull('checked_in_at')->count();
+        $totalVouchers = $event->mealVouchers()->count();
+        $redeemedVouchers = $event->mealVouchers()->where('status', 'redeemed')->count();
+        $sessions = $event->sessions()->withCount('attendance')->get();
+
+        return $this->ok('Analytics summary retrieved.', [
+            'total_attendees' => $totalAttendees,
+            'checked_in_attendees' => $checkedIn,
+            'check_in_percentage' => $totalAttendees ? round(($checkedIn / $totalAttendees) * 100, 2) : 0,
+            'total_meal_vouchers' => $totalVouchers,
+            'redeemed_meal_vouchers' => $redeemedVouchers,
+            'meal_redemption_percentage' => $totalVouchers ? round(($redeemedVouchers / $totalVouchers) * 100, 2) : 0,
+            'total_sessions' => $sessions->count(),
+            'total_session_attendance' => $sessions->sum('attendance_count'),
+            'overcrowded_sessions_count' => $sessions->filter(fn ($session) => $session->attendance_count > $session->capacity)->count(),
+            'notifications_sent' => EventNotification::query()->where('event_id', $event->id)->where('status', 'sent')->count(),
+        ]);
+    }
+
+    public function analyticsCheckIns(Event $event)
+    {
+        $rows = CheckIn::query()->where('event_id', $event->id)->get()
+            ->groupBy(fn ($checkIn) => $checkIn->checked_in_at->format('Y-m-d H:00'))
+            ->map(fn ($items, $period) => ['period' => $period, 'count' => $items->count()])
+            ->values();
+
+        return $this->ok('Check-in analytics retrieved.', $rows);
+    }
+
+    public function analyticsMeals(Event $event)
+    {
+        $rows = MealCategory::query()->where('event_id', $event->id)->withCount(['vouchers as redemption_count' => fn ($query) => $query->where('status', 'redeemed')])->get();
+
+        return $this->ok('Meal analytics retrieved.', $rows->map(fn ($category) => [
+            'meal_category_id' => $category->id,
+            'name' => $category->name,
+            'redeemed_count' => $category->redemption_count,
+        ]));
+    }
+
+    public function analyticsSessions(Event $event)
+    {
+        $rows = $event->sessions()->withCount('attendance')->get()->map(fn ($session) => [
+            'session_id' => $session->id,
+            'title' => $session->title,
+            'capacity' => $session->capacity,
+            'attendance_total' => $session->attendance_count,
+            'percentage_full' => $session->capacity ? round(($session->attendance_count / $session->capacity) * 100, 2) : 0,
+            'capacity_status' => $session->attendance_count > $session->capacity ? 'over_capacity' : ($session->attendance_count === $session->capacity ? 'full' : 'available'),
+        ]);
+
+        return $this->ok('Session analytics retrieved.', $rows);
     }
 
     public function mealCategories(Event $event)

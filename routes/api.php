@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConferenceController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function (): void {
@@ -30,6 +31,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('attendees/{attendee}/check-in', [ConferenceController::class, 'checkInAttendee'])->middleware('event.role:organiser,scanner');
         Route::post('attendees/check-in/scan', [ConferenceController::class, 'scanAttendee'])->middleware('event.role:organiser,scanner');
 
+        Route::get('analytics/summary', [ConferenceController::class, 'analyticsSummary']);
+        Route::get('analytics/check-ins', [ConferenceController::class, 'analyticsCheckIns']);
+        Route::get('analytics/meals', [ConferenceController::class, 'analyticsMeals']);
+        Route::get('analytics/sessions', [ConferenceController::class, 'analyticsSessions']);
+
         Route::get('meal-categories', [ConferenceController::class, 'mealCategories']);
         Route::get('meal-categories/{mealCategory}', [ConferenceController::class, 'showMealCategory']);
         Route::get('meal-vouchers', [ConferenceController::class, 'mealVouchers']);
@@ -44,6 +50,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('notifications', [ConferenceController::class, 'notifications']);
         Route::get('notifications/{notification}', [ConferenceController::class, 'showNotification']);
+
+        Route::get('reports/attendance.csv', [ReportController::class, 'attendance']);
+        Route::get('reports/meals.csv', [ReportController::class, 'meals']);
+        Route::get('reports/sessions.csv', [ReportController::class, 'sessions']);
+        Route::get('reports/notifications.csv', [ReportController::class, 'notifications']);
     });
 
     Route::prefix('events/{event}')->middleware('event.role:organiser')->group(function (): void {
