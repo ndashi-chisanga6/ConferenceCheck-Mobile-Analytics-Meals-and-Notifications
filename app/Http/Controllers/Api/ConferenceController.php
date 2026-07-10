@@ -3,18 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\AttendeeRequest;
+use App\Http\Requests\Api\DeviceTokenRequest;
 use App\Http\Requests\Api\MealCategoryRequest;
 use App\Http\Requests\Api\MealVoucherGenerateRequest;
 use App\Http\Requests\Api\MealVoucherScanRequest;
+use App\Http\Requests\Api\NotificationSendRequest;
 use App\Http\Requests\Api\SessionRequest;
 use App\Http\Requests\Api\SessionScanRequest;
 use App\Models\Attendee;
 use App\Models\CheckIn;
 use App\Models\ConferenceSession;
+use App\Models\DeviceToken;
 use App\Models\Event;
+use App\Models\EventNotification;
 use App\Models\MealCategory;
 use App\Models\MealRedemption;
 use App\Models\MealVoucher;
+use App\Models\NotificationRecipient;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -319,8 +325,90 @@ class ConferenceController extends ApiController
         return $this->ok('Session attendance retrieved.', $session->attendance()->with('attendee')->get());
     }
 
+    public function storeDeviceToken(DeviceTokenRequest $request)
+    {
+        $token = DeviceToken::query()->updateOrCreate(
+            ['token' => $request->string('token')->toString()],
+            ['user_id' => $request->user()->id, 'platform' => $request->string('platform')->toString(), 'last_used_at' => now()]
+        );
+
+        return $this->ok('Device token saved.', $token);
+    }
+
+    public function deleteDeviceToken(Request $request, DeviceToken $deviceToken)
+    {
+        if ($deviceToken->user_id !== $request->user()->id && $request->user()->role !== 'organiser') {
+            return $this->fail('You cannot delete this device token.', null, 403);
+        }
+
+        $deviceToken->delete();
+
+        return $this->ok('Device token deleted.');
+    }
+
+    public function notifications(Event $event)
+    {
+        return $this->ok('Notifications retrieved.', EventNotification::query()->where('event_id', $event->id)->withCount('recipients')->latest()->get());
+    }
+
+    public function sendNotification(NotificationSendRequest $request, Event $event, FirebaseNotificationService $firebase)
+    {
+        return DB::transaction(function () use ($request, $event, $firebase) {
+            $notification = EventNotification::query()->create($request->validated() + [
+                'event_id' => $event->id,
+                'sent_by' => $request->user()->id,
+                'status' => 'draft',
+            ]);
+
+            $recipients = $this->resolveNotificationRecipients($event, $request->string('target_type')->toString(), $request->integer('target_session_id') ?: null);
+            $tokens = [];
+
+            foreach ($recipients as $recipient) {
+                NotificationRecipient::query()->create([
+                    'notification_id' => $notification->id,
+                    'user_id' => $recipient['user_id'],
+                    'attendee_id' => $recipient['attendee_id'],
+                    'status' => 'pending',
+                ]);
+                if ($recipient['user_id']) {
+                    $tokens = array_merge($tokens, DeviceToken::query()->where('user_id', $recipient['user_id'])->pluck('token')->all());
+                }
+            }
+
+            $result = $firebase->send($tokens, $notification->title, $notification->message);
+            $status = $result['success'] ? 'sent' : 'failed';
+            $notification->update(['status' => $status, 'sent_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
+            $notification->recipients()->update(['status' => $status, 'delivered_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
+
+            return $this->ok('Notification sent.', ['notification' => $notification->fresh('recipients'), 'firebase' => $result]);
+        });
+    }
+
+    public function showNotification(Event $event, EventNotification $notification)
+    {
+        return $notification->event_id === $event->id ? $this->ok('Notification retrieved.', $notification->load('recipients')) : $this->fail('Notification not found for this event.', null, 404);
+    }
+
     private function capacityStatus(int $count, int $capacity): string
     {
         return $count > $capacity ? 'over_capacity' : ($count === $capacity ? 'full' : 'available');
+    }
+
+    private function resolveNotificationRecipients(Event $event, string $targetType, ?int $sessionId): array
+    {
+        return match ($targetType) {
+            'session_attendees' => Attendee::query()
+                ->where('event_id', $event->id)
+                ->whereIn('id', DB::table('session_attendance')->where('session_id', $sessionId)->pluck('attendee_id'))
+                ->get()
+                ->map(fn ($attendee) => ['user_id' => $attendee->user_id, 'attendee_id' => $attendee->id])
+                ->all(),
+            'organisers', 'scanners' => $event->users()->wherePivot('role', rtrim($targetType, 's'))->get()
+                ->map(fn ($user) => ['user_id' => $user->id, 'attendee_id' => null])
+                ->all(),
+            default => $event->attendees()->get()
+                ->map(fn ($attendee) => ['user_id' => $attendee->user_id, 'attendee_id' => $attendee->id])
+                ->all(),
+        };
     }
 }

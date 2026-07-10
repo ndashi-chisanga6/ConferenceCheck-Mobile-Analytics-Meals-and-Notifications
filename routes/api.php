@@ -21,6 +21,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::match(['put', 'patch'], 'events/{event}', [EventController::class, 'update'])->middleware('event.role:organiser');
     Route::delete('events/{event}', [EventController::class, 'destroy'])->middleware('event.role:organiser');
 
+    Route::post('device-tokens', [ConferenceController::class, 'storeDeviceToken']);
+    Route::delete('device-tokens/{deviceToken}', [ConferenceController::class, 'deleteDeviceToken']);
+
     Route::prefix('events/{event}')->middleware('event.role:organiser,scanner,attendee')->group(function (): void {
         Route::get('attendees', [ConferenceController::class, 'attendees']);
         Route::get('attendees/{attendee}', [ConferenceController::class, 'showAttendee']);
@@ -38,6 +41,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('sessions/{session}', [ConferenceController::class, 'showSession']);
         Route::post('sessions/{session}/scan', [ConferenceController::class, 'scanSession'])->middleware('event.role:organiser,scanner');
         Route::get('sessions/{session}/attendance', [ConferenceController::class, 'sessionAttendance']);
+
+        Route::get('notifications', [ConferenceController::class, 'notifications']);
+        Route::get('notifications/{notification}', [ConferenceController::class, 'showNotification']);
     });
 
     Route::prefix('events/{event}')->middleware('event.role:organiser')->group(function (): void {
@@ -54,5 +60,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('sessions', [ConferenceController::class, 'storeSession']);
         Route::match(['put', 'patch'], 'sessions/{session}', [ConferenceController::class, 'updateSession']);
         Route::delete('sessions/{session}', [ConferenceController::class, 'deleteSession']);
+
+        Route::post('notifications/send', [ConferenceController::class, 'sendNotification']);
     });
 });
