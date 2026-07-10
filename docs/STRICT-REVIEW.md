@@ -64,6 +64,20 @@ The prototype **satisfies the core of the portal listing and the proposal**: ana
 5. Start the publication paper skeleton (objective 6).
 6. Push this repository to GitHub and submit the link with the Week 8 progress report.
 
+## Post-review fixes (2026-07-10)
+
+| Review finding | Status |
+| --- | --- |
+| 1. FCM delivery stub | **Fixed (server-side)** — `FirebaseNotificationService` now performs real FCM v1 sends (service-account JWT → OAuth token → per-device send) with per-token failure counting; demo mode remains the fallback when credentials are absent. Covered by a feature test with faked Google endpoints. Live delivery still requires a Firebase project: set `FIREBASE_PROJECT_ID`/`FIREBASE_CREDENTIALS_PATH`, disable `FIREBASE_DEMO_MODE`, and add `google-services.json` to the Android app. |
+| 2. Attendee QR fabricated client-side | **Fixed** — new authenticated `GET /events/{event}/attendees/me` endpoint returns the caller's real attendee record; My QR screen now fetches it (loading/error/retry states). Two feature tests added. |
+| 3. Stale api.md notification fields | **Fixed** — send payload (`title`/`message`/`target_type`/`target_session_id`) now documented explicitly; `attendees/me` documented. |
+| 4. Inconsistent capacity vocabulary | **Fixed** — sessions CSV now uses the same `available`/`full`/`over_capacity` terms as the analytics endpoints. |
+| 5. No offline scan queue | Open. |
+| 6. Thin mobile test coverage | Open. |
+| (Objective 1 caveat) Dashboard not auto-refreshing | **Fixed** — analytics provider self-refreshes every 30 seconds while the dashboard is open, matching the revised proposal's freshness target; pull-to-refresh retained. |
+
+Verification after fixes: backend 51/51 tests (185 assertions), PHPStan level 7 clean, Pint clean, `flutter analyze` no issues, `flutter test` 4/4.
+
 ## Accomplishment documents
 
 1. [Authentication and role-based access](accomplishments/01-authentication-and-roles.md)

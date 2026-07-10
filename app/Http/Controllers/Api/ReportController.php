@@ -40,7 +40,7 @@ class ReportController extends ApiController
             $session->venue,
             $session->capacity,
             $session->attendance_count,
-            $session->attendance_count > $session->capacity ? 'over_capacity' : 'ok',
+            $session->attendance_count > $session->capacity ? 'over_capacity' : ($session->attendance_count === $session->capacity ? 'full' : 'available'),
         ])->all();
 
         return $this->csv('sessions.csv', ['Title', 'Venue', 'Capacity', 'Attendance', 'Capacity Status'], $rows);
