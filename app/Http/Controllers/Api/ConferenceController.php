@@ -6,8 +6,11 @@ use App\Http\Requests\Api\AttendeeRequest;
 use App\Http\Requests\Api\MealCategoryRequest;
 use App\Http\Requests\Api\MealVoucherGenerateRequest;
 use App\Http\Requests\Api\MealVoucherScanRequest;
+use App\Http\Requests\Api\SessionRequest;
+use App\Http\Requests\Api\SessionScanRequest;
 use App\Models\Attendee;
 use App\Models\CheckIn;
+use App\Models\ConferenceSession;
 use App\Models\Event;
 use App\Models\MealCategory;
 use App\Models\MealRedemption;
@@ -232,5 +235,92 @@ class ConferenceController extends ApiController
     public function mealRedemptions(Event $event)
     {
         return $this->ok('Meal redemptions retrieved.', MealRedemption::query()->where('event_id', $event->id)->latest()->get());
+    }
+
+    public function sessions(Event $event)
+    {
+        return $this->ok('Sessions retrieved.', $event->sessions()->withCount('attendance')->get());
+    }
+
+    public function storeSession(SessionRequest $request, Event $event)
+    {
+        return $this->ok('Session created.', $event->sessions()->create($request->validated()), 201);
+    }
+
+    public function showSession(Event $event, ConferenceSession $session)
+    {
+        return $session->event_id === $event->id ? $this->ok('Session retrieved.', $session->loadCount('attendance')) : $this->fail('Session not found for this event.', null, 404);
+    }
+
+    public function updateSession(SessionRequest $request, Event $event, ConferenceSession $session)
+    {
+        if ($session->event_id !== $event->id) {
+            return $this->fail('Session not found for this event.', null, 404);
+        }
+
+        $session->update($request->validated());
+
+        return $this->ok('Session updated.', $session->fresh());
+    }
+
+    public function deleteSession(Event $event, ConferenceSession $session)
+    {
+        if ($session->event_id !== $event->id) {
+            return $this->fail('Session not found for this event.', null, 404);
+        }
+
+        $session->delete();
+
+        return $this->ok('Session deleted.');
+    }
+
+    public function scanSession(SessionScanRequest $request, Event $event, ConferenceSession $session)
+    {
+        if ($session->event_id !== $event->id) {
+            return $this->fail('Session not found for this event.', null, 404);
+        }
+
+        return DB::transaction(function () use ($request, $event, $session) {
+            $attendee = $request->filled('attendee_id')
+                ? $event->attendees()->whereKey($request->integer('attendee_id'))->first()
+                : $event->attendees()->where('qr_token', $request->string('attendee_qr_token'))->first();
+
+            if (! $attendee) {
+                return $this->fail('Attendee not found for this event.', null, 404);
+            }
+
+            $existing = $session->attendance()->where('attendee_id', $attendee->id)->first();
+            if ($existing) {
+                return $this->fail('Attendee has already checked into this session.', ['duplicate' => true], 409);
+            }
+
+            $attendance = $session->attendance()->create([
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'checked_in_by' => $request->user()->id,
+                'checked_in_at' => now(),
+            ]);
+            $count = $session->attendance()->count();
+
+            return $this->ok('Session attendance recorded.', [
+                'attendance' => $attendance,
+                'capacity_status' => $this->capacityStatus($count, $session->capacity),
+                'warning' => $count > $session->capacity ? 'Session capacity exceeded.' : null,
+            ]);
+        });
+    }
+
+    public function sessionAttendance(Event $event, ConferenceSession $session)
+    {
+        if ($session->event_id !== $event->id) {
+            return $this->fail('Session not found for this event.', null, 404);
+        }
+
+        return $this->ok('Session attendance retrieved.', $session->attendance()->with('attendee')->get());
+    }
+
+    private function capacityStatus(int $count, int $capacity): string
+    {
+        return $count > $capacity ? 'over_capacity' : ($count === $capacity ? 'full' : 'available');
     }
 }

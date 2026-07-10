@@ -33,6 +33,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('meal-vouchers/{mealVoucher}', [ConferenceController::class, 'showMealVoucher']);
         Route::post('meal-vouchers/scan', [ConferenceController::class, 'scanMealVoucher'])->middleware('event.role:organiser,scanner');
         Route::get('meal-redemptions', [ConferenceController::class, 'mealRedemptions']);
+
+        Route::get('sessions', [ConferenceController::class, 'sessions']);
+        Route::get('sessions/{session}', [ConferenceController::class, 'showSession']);
+        Route::post('sessions/{session}/scan', [ConferenceController::class, 'scanSession'])->middleware('event.role:organiser,scanner');
+        Route::get('sessions/{session}/attendance', [ConferenceController::class, 'sessionAttendance']);
     });
 
     Route::prefix('events/{event}')->middleware('event.role:organiser')->group(function (): void {
@@ -45,5 +50,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('meal-categories/{mealCategory}', [ConferenceController::class, 'deleteMealCategory']);
 
         Route::post('meal-vouchers/generate', [ConferenceController::class, 'generateMealVouchers']);
+
+        Route::post('sessions', [ConferenceController::class, 'storeSession']);
+        Route::match(['put', 'patch'], 'sessions/{session}', [ConferenceController::class, 'updateSession']);
+        Route::delete('sessions/{session}', [ConferenceController::class, 'deleteSession']);
     });
 });
