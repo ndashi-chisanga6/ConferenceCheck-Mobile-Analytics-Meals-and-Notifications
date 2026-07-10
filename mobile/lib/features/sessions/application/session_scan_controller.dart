@@ -1,6 +1,8 @@
 import 'package:conference_check_mobile/core/api/api_exception.dart';
+import 'package:conference_check_mobile/core/offline/queued_scan.dart';
 import 'package:conference_check_mobile/features/events/application/events_providers.dart';
 import 'package:conference_check_mobile/features/sessions/application/sessions_providers.dart';
+import 'package:conference_check_mobile/features/sync/application/scan_sync_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SessionScanState {
@@ -9,11 +11,13 @@ class SessionScanState {
     this.message,
     this.success,
     this.capacityStatus,
+    this.queued = false,
   });
   final bool loading;
   final String? message;
   final bool? success;
   final String? capacityStatus;
+  final bool queued;
 }
 
 class SessionScanController extends Notifier<SessionScanState> {
@@ -37,8 +41,30 @@ class SessionScanController extends Notifier<SessionScanState> {
         success: true,
         capacityStatus: result['capacity_status']?.toString(),
       );
+      // Connectivity is clearly back: drain any offline backlog.
+      await ref.read(scanSyncControllerProvider.notifier).flush();
     } on ApiException catch (error) {
-      state = SessionScanState(message: error.message, success: false);
+      if (error.statusCode == null) {
+        await ref
+            .read(scanQueueProvider)
+            .enqueue(
+              QueuedScan(
+                type: QueuedScan.session,
+                eventId: event.id,
+                sessionId: session.id,
+                qrToken: token.trim(),
+                queuedAt: DateTime.now(),
+              ),
+            );
+        ref.invalidate(pendingScanCountProvider);
+        state = const SessionScanState(
+          message: 'No connection — scan saved and will sync when back online.',
+          success: false,
+          queued: true,
+        );
+      } else {
+        state = SessionScanState(message: error.message, success: false);
+      }
     } catch (error) {
       state = SessionScanState(message: error.toString(), success: false);
     }

@@ -2,6 +2,7 @@ import 'package:conference_check_mobile/core/widgets/app_button.dart';
 import 'package:conference_check_mobile/core/widgets/app_text_field.dart';
 import 'package:conference_check_mobile/core/widgets/result_banner.dart';
 import 'package:conference_check_mobile/features/meals/application/meal_scan_controller.dart';
+import 'package:conference_check_mobile/features/sync/presentation/pending_scans_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -31,6 +32,7 @@ class _MealScannerScreenState extends ConsumerState<MealScannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const PendingScansBar(),
           ClipRRect(
             borderRadius: BorderRadius.circular(18),
             child: SizedBox(
@@ -77,7 +79,7 @@ class _MealScannerScreenState extends ConsumerState<MealScannerScreen> {
               message: state.message!,
               kind: state.success == true
                   ? ResultKind.success
-                  : ResultKind.error,
+                  : (state.queued ? ResultKind.warning : ResultKind.error),
             ),
           ],
         ],

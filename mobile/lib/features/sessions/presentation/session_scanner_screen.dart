@@ -3,6 +3,7 @@ import 'package:conference_check_mobile/core/widgets/app_text_field.dart';
 import 'package:conference_check_mobile/core/widgets/result_banner.dart';
 import 'package:conference_check_mobile/features/sessions/application/session_scan_controller.dart';
 import 'package:conference_check_mobile/features/sessions/application/sessions_providers.dart';
+import 'package:conference_check_mobile/features/sync/presentation/pending_scans_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -35,6 +36,7 @@ class _SessionScannerScreenState extends ConsumerState<SessionScannerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const PendingScansBar(),
           sessions.when(
             loading: () => const LinearProgressIndicator(),
             error: (error, _) => Text(error.toString()),
@@ -102,7 +104,7 @@ class _SessionScannerScreenState extends ConsumerState<SessionScannerScreen> {
               message: scan.message!,
               kind: scan.success == true
                   ? ResultKind.success
-                  : ResultKind.error,
+                  : (scan.queued ? ResultKind.warning : ResultKind.error),
             ),
           ],
         ],
