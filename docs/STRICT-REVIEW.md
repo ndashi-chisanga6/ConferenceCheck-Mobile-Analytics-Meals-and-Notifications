@@ -72,11 +72,13 @@ The prototype **satisfies the core of the portal listing and the proposal**: ana
 | 2. Attendee QR fabricated client-side | **Fixed** — new authenticated `GET /events/{event}/attendees/me` endpoint returns the caller's real attendee record; My QR screen now fetches it (loading/error/retry states). Two feature tests added. |
 | 3. Stale api.md notification fields | **Fixed** — send payload (`title`/`message`/`target_type`/`target_session_id`) now documented explicitly; `attendees/me` documented. |
 | 4. Inconsistent capacity vocabulary | **Fixed** — sessions CSV now uses the same `available`/`full`/`over_capacity` terms as the analytics endpoints. |
-| 5. No offline scan queue | Open. |
-| 6. Thin mobile test coverage | Open. |
+| 5. No offline scan queue | **Fixed** — scans made without connectivity are persisted to a durable FIFO queue (`core/offline/`) and replayed in order on reconnect; replay is safe because the server answers duplicates definitively (idempotent scan endpoints). Scanner screens show a pending-count bar with manual "Sync now"; queued scans render as amber banners. Covered by unit and widget tests. |
+| 6. Thin mobile test coverage | **Improved** — 19 Flutter tests (up from 4): offline queue persistence/FIFO/replace semantics, pending-scans bar states, core widgets (MetricCard, ResultBanner, StatusBadge), formatters and attendee model parsing. |
 | (Objective 1 caveat) Dashboard not auto-refreshing | **Fixed** — analytics provider self-refreshes every 30 seconds while the dashboard is open, matching the revised proposal's freshness target; pull-to-refresh retained. |
 
-Verification after fixes: backend 51/51 tests (185 assertions), PHPStan level 7 clean, Pint clean, `flutter analyze` no issues, `flutter test` 4/4.
+Additionally, the publication paper (portal objective 6) is started: [docs/paper/conferencecheck-paper.md](paper/conferencecheck-paper.md) is a structured working draft with the abstract, design and evaluation-method sections written and `[TODO]` markers where simulated-event measurements are still needed.
+
+Verification after fixes: backend 51/51 tests (185 assertions), PHPStan level 7 clean, Pint clean, `flutter analyze` no issues, `flutter test` 19/19.
 
 ## Accomplishment documents
 
