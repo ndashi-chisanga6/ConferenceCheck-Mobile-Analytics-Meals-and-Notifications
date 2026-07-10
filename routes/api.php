@@ -26,11 +26,24 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('attendees/{attendee}', [ConferenceController::class, 'showAttendee']);
         Route::post('attendees/{attendee}/check-in', [ConferenceController::class, 'checkInAttendee'])->middleware('event.role:organiser,scanner');
         Route::post('attendees/check-in/scan', [ConferenceController::class, 'scanAttendee'])->middleware('event.role:organiser,scanner');
+
+        Route::get('meal-categories', [ConferenceController::class, 'mealCategories']);
+        Route::get('meal-categories/{mealCategory}', [ConferenceController::class, 'showMealCategory']);
+        Route::get('meal-vouchers', [ConferenceController::class, 'mealVouchers']);
+        Route::get('meal-vouchers/{mealVoucher}', [ConferenceController::class, 'showMealVoucher']);
+        Route::post('meal-vouchers/scan', [ConferenceController::class, 'scanMealVoucher'])->middleware('event.role:organiser,scanner');
+        Route::get('meal-redemptions', [ConferenceController::class, 'mealRedemptions']);
     });
 
     Route::prefix('events/{event}')->middleware('event.role:organiser')->group(function (): void {
         Route::post('attendees', [ConferenceController::class, 'storeAttendee']);
         Route::match(['put', 'patch'], 'attendees/{attendee}', [ConferenceController::class, 'updateAttendee']);
         Route::delete('attendees/{attendee}', [ConferenceController::class, 'deleteAttendee']);
+
+        Route::post('meal-categories', [ConferenceController::class, 'storeMealCategory']);
+        Route::match(['put', 'patch'], 'meal-categories/{mealCategory}', [ConferenceController::class, 'updateMealCategory']);
+        Route::delete('meal-categories/{mealCategory}', [ConferenceController::class, 'deleteMealCategory']);
+
+        Route::post('meal-vouchers/generate', [ConferenceController::class, 'generateMealVouchers']);
     });
 });
