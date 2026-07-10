@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::prefix('events/{event}')->middleware('event.role:organiser,scanner,attendee')->group(function (): void {
         Route::get('attendees', [ConferenceController::class, 'attendees']);
+        Route::get('attendees/me', [ConferenceController::class, 'myAttendee']);
         Route::get('attendees/{attendee}', [ConferenceController::class, 'showAttendee']);
         Route::post('attendees/{attendee}/check-in', [ConferenceController::class, 'checkInAttendee'])->middleware('event.role:organiser,scanner');
         Route::post('attendees/check-in/scan', [ConferenceController::class, 'scanAttendee'])->middleware('event.role:organiser,scanner');

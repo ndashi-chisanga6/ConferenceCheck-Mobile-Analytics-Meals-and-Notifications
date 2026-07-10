@@ -47,6 +47,7 @@ Login body:
 ## Attendees
 
 - `GET /api/events/{event}/attendees`
+- `GET /api/events/{event}/attendees/me` — the authenticated user's own attendee record (including `qr_token`)
 - `POST /api/events/{event}/attendees`
 - `GET /api/events/{event}/attendees/{attendee}`
 - `PUT/PATCH /api/events/{event}/attendees/{attendee}`
@@ -128,7 +129,18 @@ Session scan body can use either field:
 - `POST /api/events/{event}/notifications/send`
 - `GET /api/events/{event}/notifications/{notification}`
 
-Supported targets: `all_attendees`, `session_attendees`, `organisers`, `scanners`, `custom`.
+Send body:
+
+```json
+{
+  "title": "Schedule update",
+  "message": "Lunch starts in 10 minutes.",
+  "target_type": "all_attendees",
+  "target_session_id": null
+}
+```
+
+Supported `target_type` values: `all_attendees`, `session_attendees` (requires `target_session_id`), `organisers`, `scanners`, `custom`.
 
 ## Reports
 

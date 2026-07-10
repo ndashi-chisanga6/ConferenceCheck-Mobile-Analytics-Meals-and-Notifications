@@ -1,5 +1,6 @@
-import 'package:conference_check_mobile/core/widgets/empty_view.dart';
-import 'package:conference_check_mobile/features/auth/application/auth_providers.dart';
+import 'package:conference_check_mobile/core/widgets/error_view.dart';
+import 'package:conference_check_mobile/core/widgets/loading_view.dart';
+import 'package:conference_check_mobile/features/attendee/application/attendee_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -9,43 +10,50 @@ class MyQrScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authControllerProvider).user;
-    final fallbackToken = user == null
-        ? null
-        : 'ATTENDEE-DEMO-${user.id.toString().padLeft(3, '0')}';
+    final myAttendee = ref.watch(myAttendeeProvider);
 
-    if (fallbackToken == null) {
-      return const EmptyView(message: 'No attendee account is loaded.');
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Text(
-                  'My attendee QR',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+    return myAttendee.when(
+      loading: () => const LoadingView(message: 'Loading your QR...'),
+      error: (error, _) => ErrorView(
+        message: error.toString(),
+        onRetry: () => ref.invalidate(myAttendeeProvider),
+      ),
+      data: (attendee) => RefreshIndicator(
+        onRefresh: () => ref.refresh(myAttendeeProvider.future),
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      'My attendee QR',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(attendee.fullName),
+                    const SizedBox(height: 18),
+                    QrImageView(data: attendee.qrToken, size: 220),
+                    const SizedBox(height: 12),
+                    Text(attendee.qrToken),
+                    const SizedBox(height: 8),
+                    Text('Ticket: ${attendee.ticketCode}'),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Show this code at event check-in and session doors.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
-                QrImageView(data: fallbackToken, size: 220),
-                const SizedBox(height: 12),
-                Text(fallbackToken),
-                const SizedBox(height: 8),
-                const Text(
-                  'The current backend exposes attendee QR tokens through event attendee lists, not directly from /auth/me. This demo uses the seeded attendee token convention for the attendee account.',
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

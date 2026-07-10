@@ -9,6 +9,7 @@ use App\Models\MealVoucher;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -129,5 +130,68 @@ class ConferenceApiTest extends TestCase
         $this->get("/api/events/{$this->event->id}/reports/attendance.csv")
             ->assertOk()
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_notification_send_uses_fcm_v1_when_configured(): void
+    {
+        $opensslConfig = [];
+        $bundledConfig = dirname(PHP_BINARY).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'ssl'.DIRECTORY_SEPARATOR.'openssl.cnf';
+        if (PHP_OS_FAMILY === 'Windows' && file_exists($bundledConfig)) {
+            $opensslConfig = ['config' => $bundledConfig];
+        }
+
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA] + $opensslConfig);
+        $this->assertNotFalse($key);
+        openssl_pkey_export($key, $privateKey, null, $opensslConfig);
+        $credentialsPath = (string) tempnam(sys_get_temp_dir(), 'fcm');
+        file_put_contents($credentialsPath, json_encode([
+            'client_email' => 'service-account@test-project.iam.gserviceaccount.com',
+            'private_key' => $privateKey,
+        ]));
+
+        config([
+            'services.firebase.demo_mode' => false,
+            'services.firebase.credentials_path' => $credentialsPath,
+            'services.firebase.project_id' => 'test-project',
+        ]);
+
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'fake-access-token']),
+            'fcm.googleapis.com/*' => Http::response(['name' => 'projects/test-project/messages/1']),
+        ]);
+
+        Sanctum::actingAs($this->organiser);
+
+        $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Venue change',
+            'message' => 'Keynote moved to Hall B.',
+            'target_type' => 'all_attendees',
+        ])->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.firebase.demo', false)
+            ->assertJsonPath('data.notification.status', 'sent');
+
+        @unlink($credentialsPath);
+    }
+
+    public function test_attendee_can_fetch_own_qr_token(): void
+    {
+        $attendee = Attendee::query()->where('event_id', $this->event->id)->whereNotNull('user_id')->firstOrFail();
+        Sanctum::actingAs(User::query()->findOrFail($attendee->user_id));
+
+        $this->getJson("/api/events/{$this->event->id}/attendees/me")
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.qr_token', $attendee->qr_token)
+            ->assertJsonPath('data.ticket_code', $attendee->ticket_code);
+    }
+
+    public function test_my_attendee_returns_404_when_no_record_is_linked(): void
+    {
+        Sanctum::actingAs($this->scanner);
+
+        $this->getJson("/api/events/{$this->event->id}/attendees/me")
+            ->assertStatus(404)
+            ->assertJsonPath('success', false);
     }
 }

@@ -34,6 +34,17 @@ class ConferenceController extends ApiController
         return $this->ok('Attendees retrieved.', $event->attendees()->latest()->get());
     }
 
+    public function myAttendee(Request $request, Event $event): JsonResponse
+    {
+        $attendee = $event->attendees()->where('user_id', $request->user()->id)->first();
+
+        if (! $attendee) {
+            return $this->fail('No attendee record is linked to your account for this event.', null, 404);
+        }
+
+        return $this->ok('Attendee profile retrieved.', $attendee->load('mealVouchers.category'));
+    }
+
     public function storeAttendee(AttendeeRequest $request, Event $event): JsonResponse
     {
         $attendee = $event->attendees()->create($request->validated() + [
