@@ -1,4 +1,5 @@
 import 'package:conference_check_mobile/features/auth/application/auth_providers.dart';
+import 'package:conference_check_mobile/features/sync/application/scan_sync_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,10 @@ class SplashScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(authControllerProvider, (previous, next) {
       if (!next.initialized) return;
+      if (next.isAuthenticated) {
+        // Drain any scans queued offline in a previous run.
+        ref.read(scanSyncControllerProvider.notifier).flush();
+      }
       context.go(next.isAuthenticated ? '/events' : '/login');
     });
 

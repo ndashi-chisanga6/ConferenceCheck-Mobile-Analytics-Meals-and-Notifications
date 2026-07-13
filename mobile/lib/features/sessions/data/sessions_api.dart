@@ -34,6 +34,7 @@ class SessionsApi {
     int sessionId, {
     String? qrToken,
     int? attendeeId,
+    String? deviceId,
   }) {
     final body = <String, dynamic>{};
     if (qrToken != null) {
@@ -41,6 +42,9 @@ class SessionsApi {
     }
     if (attendeeId != null) {
       body['attendee_id'] = attendeeId;
+    }
+    if (deviceId != null) {
+      body['device_id'] = deviceId;
     }
     return _client.post(
       '/events/$eventId/sessions/$sessionId/scan',

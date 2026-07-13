@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Attendee;
 use App\Models\ConferenceSession;
 use App\Models\Event;
+use App\Models\EventNotification;
 use App\Models\MealVoucher;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -172,6 +173,74 @@ class ConferenceApiTest extends TestCase
             ->assertJsonPath('data.notification.status', 'sent');
 
         @unlink($credentialsPath);
+    }
+
+    public function test_session_scan_records_the_scanning_device(): void
+    {
+        Sanctum::actingAs($this->scanner);
+        $session = ConferenceSession::query()->where('event_id', $this->event->id)->firstOrFail();
+        $attendee = Attendee::query()->where('event_id', $this->event->id)->firstOrFail();
+        $session->attendance()->where('attendee_id', $attendee->id)->delete();
+
+        $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", [
+            'attendee_id' => $attendee->id,
+            'device_id' => 'door-scanner-7',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('session_attendance', [
+            'session_id' => $session->id,
+            'attendee_id' => $attendee->id,
+            'device_id' => 'door-scanner-7',
+        ]);
+    }
+
+    public function test_capacity_threshold_transitions_alert_organisers(): void
+    {
+        config(['services.firebase.demo_mode' => true, 'conference.capacity_warning_threshold' => 0.9]);
+        Sanctum::actingAs($this->scanner);
+
+        $session = ConferenceSession::query()->create([
+            'event_id' => $this->event->id,
+            'title' => 'Capacity Alert Test Session',
+            'venue' => 'Room T',
+            'capacity' => 3,
+            'status' => 'scheduled',
+            'starts_at' => now()->addHour(),
+            'ends_at' => now()->addHours(2),
+        ]);
+        $attendees = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $attendees[] = Attendee::query()->create([
+                'event_id' => $this->event->id,
+                'full_name' => "Capacity Tester {$i}",
+                'ticket_code' => "CAP-TEST-{$i}",
+                'qr_token' => "CAP-TOKEN-{$i}",
+            ]);
+        }
+
+        // Scans 1 and 2 stay below the 90% threshold (ceil(3 * 0.9) = 3).
+        foreach ([0, 1] as $index) {
+            $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendees[$index]->id])->assertOk();
+        }
+        $this->assertSame(0, EventNotification::query()->where('target_session_id', $session->id)->count());
+
+        // Scan 3 crosses the warning threshold.
+        $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendees[2]->id])
+            ->assertOk()
+            ->assertJsonPath('data.capacity_status', 'full');
+        $warning = EventNotification::query()->where('target_session_id', $session->id)->where('title', 'Session filling up')->first();
+        $this->assertNotNull($warning);
+        $this->assertSame('organisers', $warning->target_type);
+        $this->assertSame('sent', $warning->status);
+        $this->assertGreaterThan(0, $warning->recipients()->count());
+
+        // Scan 4 exceeds capacity.
+        $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendees[3]->id])
+            ->assertOk()
+            ->assertJsonPath('data.capacity_status', 'over_capacity');
+        $this->assertNotNull(
+            EventNotification::query()->where('target_session_id', $session->id)->where('title', 'Session over capacity')->first()
+        );
     }
 
     public function test_attendee_can_fetch_own_qr_token(): void

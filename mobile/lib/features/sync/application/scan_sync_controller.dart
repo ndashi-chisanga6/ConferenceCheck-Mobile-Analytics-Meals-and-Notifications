@@ -44,15 +44,16 @@ class ScanSyncController extends Notifier<ScanSyncState> {
         if (item.type == QueuedScan.session && item.sessionId != null) {
           await ref
               .read(sessionsApiProvider)
-              .scan(item.eventId, item.sessionId!, qrToken: item.qrToken);
+              .scan(
+                item.eventId,
+                item.sessionId!,
+                qrToken: item.qrToken,
+                deviceId: item.deviceId,
+              );
         } else {
           await ref
               .read(mealsApiProvider)
-              .scan(
-                item.eventId,
-                item.qrToken,
-                deviceId: item.deviceId ?? 'flutter-mobile',
-              );
+              .scan(item.eventId, item.qrToken, deviceId: item.deviceId);
         }
         synced++;
       } on ApiException catch (error) {

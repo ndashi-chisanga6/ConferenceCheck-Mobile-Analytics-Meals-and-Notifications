@@ -1,4 +1,5 @@
 import 'package:conference_check_mobile/core/api/api_exception.dart';
+import 'package:conference_check_mobile/core/device/device_identity.dart';
 import 'package:conference_check_mobile/core/offline/queued_scan.dart';
 import 'package:conference_check_mobile/features/events/application/events_providers.dart';
 import 'package:conference_check_mobile/features/sessions/application/sessions_providers.dart';
@@ -29,10 +30,11 @@ class SessionScanController extends Notifier<SessionScanState> {
     final session = ref.read(selectedSessionProvider);
     if (event == null || session == null || token.trim().isEmpty) return;
     state = const SessionScanState(loading: true);
+    final deviceId = await ref.read(deviceIdentityProvider).id();
     try {
       final result = await ref
           .read(sessionsApiProvider)
-          .scan(event.id, session.id, qrToken: token.trim());
+          .scan(event.id, session.id, qrToken: token.trim(), deviceId: deviceId);
       ref.invalidate(sessionsProvider);
       ref.invalidate(sessionAttendanceProvider(session.id));
       state = SessionScanState(
@@ -53,6 +55,7 @@ class SessionScanController extends Notifier<SessionScanState> {
                 eventId: event.id,
                 sessionId: session.id,
                 qrToken: token.trim(),
+                deviceId: deviceId,
                 queuedAt: DateTime.now(),
               ),
             );

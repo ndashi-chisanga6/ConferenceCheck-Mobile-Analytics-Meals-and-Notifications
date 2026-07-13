@@ -104,11 +104,13 @@ Voucher scan body:
 - `POST /api/events/{event}/sessions/{session}/scan`
 - `GET /api/events/{event}/sessions/{session}/attendance`
 
-Session scan body can use either field:
+Session scan body can use either field, plus an optional scanning-device
+identifier that is stored on the attendance record:
 
 ```json
 {
-  "attendee_qr_token": "ATTENDEE-DEMO-001"
+  "attendee_qr_token": "ATTENDEE-DEMO-001",
+  "device_id": "door-scanner-1"
 }
 ```
 
@@ -117,6 +119,11 @@ Session scan body can use either field:
   "attendee_id": 1
 }
 ```
+
+When a scan pushes a session across its warning threshold
+(`CAPACITY_WARNING_THRESHOLD`, default 90% of capacity) or over capacity,
+the event's organisers automatically receive a push notification and the
+alert appears in the notifications feed.
 
 ## Device Tokens
 

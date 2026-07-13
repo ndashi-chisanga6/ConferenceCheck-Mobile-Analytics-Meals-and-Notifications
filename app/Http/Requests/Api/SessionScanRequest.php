@@ -14,6 +14,7 @@ class SessionScanRequest extends FormRequest
         return [
             'attendee_qr_token' => ['nullable', 'required_without:attendee_id', 'string'],
             'attendee_id' => ['nullable', 'required_without:attendee_qr_token', 'integer', 'exists:attendees,id'],
+            'device_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

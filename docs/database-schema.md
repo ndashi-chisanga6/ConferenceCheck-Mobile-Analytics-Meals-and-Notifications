@@ -13,7 +13,7 @@ The backend uses standard Laravel migrations. Local development is configured fo
 - `meal_vouchers`: one voucher per attendee and meal category, with unique QR token.
 - `meal_redemptions`: immutable redemption record for redeemed vouchers.
 - `event_sessions`: conference session records exposed by the API as `/sessions`.
-- `session_attendance`: attendee check-ins for sessions.
+- `session_attendance`: attendee check-ins for sessions, including the scanning `device_id` for the audit trail.
 - `device_tokens`: Firebase device tokens by user.
 - `notifications`: organiser-created event notifications.
 - `notification_recipients`: resolved delivery records per user or attendee.

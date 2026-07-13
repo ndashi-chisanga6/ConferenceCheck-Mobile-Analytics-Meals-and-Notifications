@@ -9,7 +9,7 @@ class SessionAttendance extends Model
 {
     protected $table = 'session_attendance';
 
-    protected $fillable = ['event_id', 'session_id', 'attendee_id', 'checked_in_by', 'checked_in_at'];
+    protected $fillable = ['event_id', 'session_id', 'attendee_id', 'checked_in_by', 'device_id', 'checked_in_at'];
 
     protected function casts(): array
     {

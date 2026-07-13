@@ -350,40 +350,51 @@ class ConferenceController extends ApiController
         return $this->ok('Session deleted.');
     }
 
-    public function scanSession(SessionScanRequest $request, Event $event, ConferenceSession $session): JsonResponse
+    public function scanSession(SessionScanRequest $request, Event $event, ConferenceSession $session, FirebaseNotificationService $firebase): JsonResponse
     {
         if ($session->event_id !== $event->id) {
             return $this->fail('Session not found for this event.', null, 404);
         }
 
-        return DB::transaction(function () use ($request, $event, $session) {
+        $result = DB::transaction(function () use ($request, $event, $session) {
             $attendee = $request->filled('attendee_id')
                 ? $event->attendees()->whereKey($request->integer('attendee_id'))->first()
                 : $event->attendees()->where('qr_token', $request->string('attendee_qr_token'))->first();
 
             if (! $attendee) {
-                return $this->fail('Attendee not found for this event.', null, 404);
+                return ['response' => $this->fail('Attendee not found for this event.', null, 404)];
             }
 
             $existing = $session->attendance()->where('attendee_id', $attendee->id)->first();
             if ($existing) {
-                return $this->fail('Attendee has already checked into this session.', ['duplicate' => true], 409);
+                return ['response' => $this->fail('Attendee has already checked into this session.', ['duplicate' => true], 409)];
             }
 
             $attendance = $session->attendance()->create([
                 'event_id' => $event->id,
                 'attendee_id' => $attendee->id,
                 'checked_in_by' => $request->user()->id,
+                'device_id' => $request->input('device_id'),
                 'checked_in_at' => now(),
             ]);
-            $count = $session->attendance()->count();
 
-            return $this->ok('Session attendance recorded.', [
-                'attendance' => $attendance,
-                'capacity_status' => $this->capacityStatus($count, $session->capacity),
-                'warning' => $count > $session->capacity ? 'Session capacity exceeded.' : null,
-            ]);
+            return ['attendance' => $attendance, 'count' => $session->attendance()->count()];
         });
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        $count = $result['count'];
+        // The alert is dispatched after the transaction commits so a push
+        // is never sent for attendance that ends up rolled back.
+        $this->alertOrganisersOnCapacityTransition($event, $session, $count, $request->user()->id, $firebase);
+
+        return $this->ok('Session attendance recorded.', [
+            'attendance' => $result['attendance'],
+            'capacity_status' => $this->capacityStatus($count, $session->capacity),
+            'warning' => $count > $session->capacity ? 'Session capacity exceeded.' : null,
+        ]);
     }
 
     public function sessionAttendance(Event $event, ConferenceSession $session): JsonResponse
@@ -431,24 +442,7 @@ class ConferenceController extends ApiController
             ]);
 
             $recipients = $this->resolveNotificationRecipients($event, $request->string('target_type')->toString(), $request->integer('target_session_id') ?: null);
-            $tokens = [];
-
-            foreach ($recipients as $recipient) {
-                NotificationRecipient::query()->create([
-                    'notification_id' => $notification->id,
-                    'user_id' => $recipient['user_id'],
-                    'attendee_id' => $recipient['attendee_id'],
-                    'status' => 'pending',
-                ]);
-                if ($recipient['user_id']) {
-                    $tokens = array_merge($tokens, DeviceToken::query()->where('user_id', $recipient['user_id'])->pluck('token')->all());
-                }
-            }
-
-            $result = $firebase->send($tokens, $notification->title, $notification->message);
-            $status = $result['success'] ? 'sent' : 'failed';
-            $notification->update(['status' => $status, 'sent_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
-            $notification->recipients()->update(['status' => $status, 'delivered_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
+            $result = $this->deliverNotification($notification, $recipients, $firebase);
 
             return $this->ok('Notification sent.', ['notification' => $notification->fresh('recipients'), 'firebase' => $result]);
         });
@@ -462,6 +456,75 @@ class ConferenceController extends ApiController
     private function capacityStatus(int $count, int $capacity): string
     {
         return $count > $capacity ? 'over_capacity' : ($count === $capacity ? 'full' : 'available');
+    }
+
+    /**
+     * Push an alert to the event's organisers when a session crosses its
+     * warning threshold (default 90% of capacity) or exceeds capacity.
+     * Each alert fires exactly once because attendance only grows.
+     */
+    private function alertOrganisersOnCapacityTransition(Event $event, ConferenceSession $session, int $count, int $sentBy, FirebaseNotificationService $firebase): void
+    {
+        $capacity = $session->capacity;
+        if ($capacity <= 0) {
+            return;
+        }
+
+        $warningAt = max(1, (int) ceil($capacity * (float) config('conference.capacity_warning_threshold', 0.9)));
+        $previous = $count - 1;
+
+        if ($previous < $warningAt && $count >= $warningAt && $count <= $capacity) {
+            $title = 'Session filling up';
+            $message = "{$session->title} has reached {$count} of {$capacity} seats.";
+        } elseif ($previous <= $capacity && $count > $capacity) {
+            $title = 'Session over capacity';
+            $message = "{$session->title} has exceeded capacity ({$count}/{$capacity}).";
+        } else {
+            return;
+        }
+
+        $notification = EventNotification::query()->create([
+            'event_id' => $event->id,
+            'title' => $title,
+            'message' => $message,
+            'target_type' => 'organisers',
+            'target_session_id' => $session->id,
+            'sent_by' => $sentBy,
+            'status' => 'draft',
+        ]);
+
+        $this->deliverNotification($notification, $this->resolveNotificationRecipients($event, 'organisers', null), $firebase);
+    }
+
+    /**
+     * Create per-recipient delivery records, send via Firebase, and record
+     * the outcome on the notification and every recipient row.
+     *
+     * @param  array<int, array{user_id: int|null, attendee_id: int|null}>  $recipients
+     * @return array{success: bool, demo: bool, sent_count: int, failed_count: int}
+     */
+    private function deliverNotification(EventNotification $notification, array $recipients, FirebaseNotificationService $firebase): array
+    {
+        $tokens = [];
+
+        foreach ($recipients as $recipient) {
+            NotificationRecipient::query()->create([
+                'notification_id' => $notification->id,
+                'user_id' => $recipient['user_id'],
+                'attendee_id' => $recipient['attendee_id'],
+                'status' => 'pending',
+            ]);
+            if ($recipient['user_id']) {
+                $tokens = array_merge($tokens, DeviceToken::query()->where('user_id', $recipient['user_id'])->pluck('token')->all());
+            }
+        }
+
+        $result = $firebase->send($tokens, $notification->title, $notification->message);
+        $status = $result['success'] ? 'sent' : 'failed';
+        $notification->update(['status' => $status, 'sent_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
+        $notification->recipients()->update(['status' => $status, 'delivered_at' => $result['success'] ? now() : null, 'failure_reason' => $result['success'] ? null : 'Firebase send failed.']);
+
+        return $result;
     }
 
     /**

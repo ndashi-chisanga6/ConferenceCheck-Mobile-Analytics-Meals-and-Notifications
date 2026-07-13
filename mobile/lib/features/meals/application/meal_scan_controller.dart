@@ -1,4 +1,5 @@
 import 'package:conference_check_mobile/core/api/api_exception.dart';
+import 'package:conference_check_mobile/core/device/device_identity.dart';
 import 'package:conference_check_mobile/core/offline/queued_scan.dart';
 import 'package:conference_check_mobile/features/events/application/events_providers.dart';
 import 'package:conference_check_mobile/features/meals/application/meals_providers.dart';
@@ -26,10 +27,11 @@ class MealScanController extends Notifier<ScanState> {
     final event = ref.read(selectedEventProvider);
     if (event == null || token.trim().isEmpty) return;
     state = const ScanState(loading: true);
+    final deviceId = await ref.read(deviceIdentityProvider).id();
     try {
       await ref
           .read(mealsApiProvider)
-          .scan(event.id, token.trim(), deviceId: 'flutter-mobile');
+          .scan(event.id, token.trim(), deviceId: deviceId);
       ref.invalidate(mealRedemptionsProvider);
       ref.invalidate(mealVouchersProvider);
       state = const ScanState(
@@ -47,7 +49,7 @@ class MealScanController extends Notifier<ScanState> {
                 type: QueuedScan.meal,
                 eventId: event.id,
                 qrToken: token.trim(),
-                deviceId: 'flutter-mobile',
+                deviceId: deviceId,
                 queuedAt: DateTime.now(),
               ),
             );

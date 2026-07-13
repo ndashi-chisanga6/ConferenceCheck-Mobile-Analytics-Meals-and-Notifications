@@ -47,8 +47,30 @@ class CheckinsChart extends StatelessWidget {
                     Text(meta.formattedValue, style: labelStyle),
               ),
             ),
-            bottomTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 26,
+                interval: (points.length / 4).ceilToDouble().clamp(
+                  1,
+                  double.infinity,
+                ),
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= points.length) {
+                    return const SizedBox.shrink();
+                  }
+                  // Labels arrive as "yyyy-MM-dd HH:00" — show the hour.
+                  final label = points[index].label;
+                  final hour = label.length >= 5
+                      ? label.substring(label.length - 5)
+                      : label;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(hour, style: labelStyle),
+                  );
+                },
+              ),
             ),
           ),
           borderData: FlBorderData(show: false),

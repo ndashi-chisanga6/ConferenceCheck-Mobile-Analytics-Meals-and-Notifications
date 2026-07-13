@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DeviceToken;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -47,7 +48,15 @@ class FirebaseNotificationService
                 $sent++;
             } else {
                 $failed++;
-                Log::warning('FCM v1 send failed', ['status' => $response->status(), 'response' => $response->json()]);
+                $errorStatus = $response->json('error.status');
+                if (in_array($errorStatus, ['UNREGISTERED', 'INVALID_ARGUMENT'], true)) {
+                    // Google says this token will never work again — stop
+                    // counting it against future sends.
+                    DeviceToken::query()->where('token', $token)->delete();
+                    Log::info('Pruned invalid FCM device token.', ['error_status' => $errorStatus]);
+                } else {
+                    Log::warning('FCM v1 send failed', ['status' => $response->status(), 'response' => $response->json()]);
+                }
             }
         }
 
