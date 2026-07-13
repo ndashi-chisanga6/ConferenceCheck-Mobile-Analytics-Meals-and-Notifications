@@ -90,23 +90,35 @@ Verification after fixes: backend 51/51 tests (185 assertions), PHPStan level 7 
 6. [Reporting and CSV export](accomplishments/06-reports-and-export.md)
 7. [Flutter mobile application](accomplishments/07-flutter-mobile-app.md)
 
-## Commit history (local — becomes clickable links after pushing to GitHub as `<repo-url>/commit/<hash>`)
+## Commit history — proof of work
 
-Each module commit carries a short progress report under [docs/progress-reports/](progress-reports/) covering what was built, the objective mapping, blockers and next steps.
+Repository: <https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications>
 
-| Commit | Content |
-| --- | --- |
-| `fe0a1db` | Laravel backend scaffold and development tooling |
-| `a673dac` | Project proposal, API contract and database schema design |
-| `a32a615` | Conference domain schema, Eloquent models and demo seeder |
-| `34e0d2b` | Sanctum token authentication and event role authorisation |
-| `d12947f` | Event and attendee management with QR check-in |
-| `4d1a2ee` | Meal voucher engine with one-time redemption |
-| `12dea5c` | Session attendance tracking with capacity alerts |
-| `dc37173` | Notification system with device tokens and delivery records |
-| `98a0360` | Analytics endpoints and CSV report exports |
-| `9465802` | Feature tests covering the conference API (48 passed) |
-| `a3cad4b` | Flutter app scaffold with core layer, auth and event selection |
-| `4dd8391` | Mobile feature screens: dashboard, meals, sessions, notifications |
+Each module commit carries a short progress report under [docs/progress-reports/](progress-reports/) covering what was built, the objective mapping, blockers and next steps. The right-hand column maps each commit to the phase of the proposal timeline (Table 4) it advances, showing the build-up from foundations through the module phases towards the midway (week 16) end-to-end demonstration.
 
-> Note: the repository history was reconstructed on 2026-07-10 from the working prototype, grouping the work into module-by-module commits; development history before that date is not in git.
+| Commit | Content | Proposal phase (Table 4) |
+| --- | --- | --- |
+| [`a673dac`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a673dac) | Project proposal, API contract and database schema design | Requirements and Design (wk 3–5) |
+| [`fe0a1db`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/fe0a1db) | Laravel backend scaffold and development tooling | Environment and Foundations (wk 6–7) |
+| [`a32a615`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a32a615) | Conference domain schema, Eloquent models and demo seeder | Environment and Foundations (wk 6–7) |
+| [`34e0d2b`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/34e0d2b) | Sanctum token authentication and event role authorisation | Environment and Foundations (wk 6–7) |
+| [`a3cad4b`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a3cad4b) | Flutter app scaffold with core layer, auth and event selection | Environment and Foundations (wk 6–7) |
+| [`d12947f`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/d12947f) | Event and attendee management with QR check-in | Progress Review 1 — authenticated skeleton (wk 8) |
+| [`4d1a2ee`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/4d1a2ee) | Meal voucher engine with one-time redemption | Meal Voucher Module (wk 9–11) |
+| [`12dea5c`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/12dea5c) | Session attendance tracking with capacity alerts | Analytics and Sessions (wk 12–14) |
+| [`98a0360`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/98a0360) | Analytics endpoints and CSV report exports | Analytics and Sessions (wk 12–14); CSV ahead of Reporting (wk 17–18) |
+| [`dc37173`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/dc37173) | Notification system with device tokens and delivery records | Notifications (wk 15) |
+| [`9465802`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/9465802) | Feature tests covering the conference API (48 passed) | Test harness (cross-phase, from wk 6–7) |
+| [`4dd8391`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/4dd8391) | Mobile feature screens: dashboard, meals, sessions, notifications | Analytics and Sessions / Notifications, client side (wk 12–15) |
+| [`bf4c3d7`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/bf4c3d7) | System review, accomplishment evidence and revised proposal | Consolidation towards Progress Review 2 (wk 16) |
+| [`9be0ccd`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/9be0ccd) | Static analysis fixes and CI PHP matrix | Test harness (cross-phase) |
+| [`e2a5c7f`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/e2a5c7f) | Attendee my-QR endpoint, used by the mobile app | Post-review fix towards Progress Review 2 (wk 16) |
+| [`4ceaeff`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/4ceaeff) | Dashboard analytics auto-refresh every 30 seconds | Analytics — near-real-time target (wk 12–14) |
+| [`5b6a8d2`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/5b6a8d2) | Firebase Cloud Messaging v1 delivery | Notifications (wk 15) |
+| [`3234b88`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/3234b88) | Unified capacity vocabulary; post-review fix log | Post-review fix towards Progress Review 2 (wk 16) |
+| [`61e0992`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/61e0992) | Offline scan queue with replay on reconnect | Risk mitigation promised in proposal risk table (wk 16) |
+| [`ae812f3`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/ae812f3) | Broadened mobile test coverage (19 Flutter tests) | Test harness (cross-phase) |
+| [`9fcb672`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/9fcb672) | Publication paper working draft; review addendum | Documentation and Paper (wk 21–23, drafted early per Table 4) |
+| [`56f53e0`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/56f53e0) | Mobile theme polish, branded web landing page, end-to-end emulator demo verified ([report 14](progress-reports/14-ui-polish-and-emulator-verification.md)) | Progress Review 2 — end-to-end demonstration (wk 16) |
+
+> Note: the repository history was reconstructed on 2026-07-10 from the working prototype, grouping the work into module-by-module commits; development history before that date is not in git. Commits after that date record development as it happens.
