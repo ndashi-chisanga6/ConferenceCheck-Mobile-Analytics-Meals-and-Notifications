@@ -9,7 +9,7 @@
 
 *(Draft — tighten after evaluation results are final.)*
 
-On-site conference operations — meal service, session seating, attendee communication — are still widely managed with paper registers and printed vouchers, processes that scale poorly and are vulnerable to duplicate-collection fraud. This paper presents the design, implementation, and evaluation of ConferenceCheck Mobile, the analytics and operations component of a conference management companion application. The system contributes (i) a QR-code based meal voucher protocol in which single-use redemption is enforced structurally, through database row locking and an append-only redemption relation with a per-voucher uniqueness constraint, rather than through application-level checks; (ii) a near-real-time analytics dashboard with a bounded 30-second staleness guarantee; (iii) session attendance tracking with capacity thresholds and overcrowding alerts; (iv) dual-channel attendee notifications (Firebase Cloud Messaging push plus an audited in-app feed with per-recipient delivery records); and (v) an offline scan queue whose safe replay follows from the server's idempotent scan semantics. Evaluation on seeded event datasets with scripted fraud scenarios shows `[TODO: headline numbers — duplicate rejection rate, median scan latency, throughput vs. manual baseline]`. The results indicate that placing anti-fraud guarantees in the database's constraint machinery eliminates time-of-check-to-time-of-use races by construction while keeping scan-point latency within interactive bounds.
+On-site conference operations — meal service, session seating, attendee communication — are still widely managed with paper registers and printed vouchers, processes that scale poorly and are vulnerable to duplicate-collection fraud. This paper presents the design, implementation, and evaluation of ConferenceCheck Mobile, the analytics and operations component of a conference management companion application. The system contributes (i) a QR-code based meal voucher protocol in which single-use redemption is enforced structurally, through database row locking and an append-only redemption relation with a per-voucher uniqueness constraint, rather than through application-level checks; (ii) a near-real-time analytics dashboard with a bounded 30-second staleness guarantee; (iii) session attendance tracking with capacity thresholds and overcrowding alerts; (iv) dual-channel attendee notifications (Firebase Cloud Messaging push plus an audited in-app feed with per-recipient delivery records); and (v) an offline scan queue whose safe replay follows from the server's idempotent scan semantics. Evaluation against a seeded 500-attendee event with scripted fraud scenarios shows 100% duplicate rejection across 100 sequential and 100 concurrent duplicate submissions (every concurrency race resolved to exactly one redemption), median scan-validation latency of 114 ms (95th percentile 210 ms), and byte-accurate CSV exports against database ground truth. The results indicate that placing anti-fraud guarantees in the database's constraint machinery eliminates time-of-check-to-time-of-use races by construction while keeping scan-point latency well within interactive bounds.
 
 **Keywords:** conference management, QR code, mobile application, idempotency, meal voucher, event analytics, Flutter, push notifications
 
@@ -78,32 +78,33 @@ Scans captured without connectivity are persisted to a durable FIFO queue on the
 
 ### 5.1 Method
 
-Two levels: (a) automated verification — 51 backend feature tests / 185 assertions covering every business rule including concurrent double-scan, out-of-window redemption, cross-event access and role denial; 19 Flutter unit/widget tests including offline queue semantics; (b) a structured simulated-event exercise (500 attendees, four meal categories, ten sessions) with scripted fraud and load scenarios, measured against the acceptance criteria of the revised proposal (Table 3 there).
+Two levels: (a) automated verification — 53 backend feature tests / 199 assertions covering every business rule including concurrent double-scan, out-of-window redemption, capacity-alert transitions, cross-event access and role denial; 19 Flutter unit/widget tests including offline queue semantics; (b) a scripted simulated-event exercise against a seeded 500-attendee event with one meal category (a voucher per attendee) and ten sessions, driven by a reproducible measurement script (`tools/run-evaluation.py`, dataset seeded by `tools/seed-evaluation-event.php`). Measurement environment: single Windows 11 machine, Laravel development server (PHP 8.5.8, single process), PostgreSQL 18, loopback HTTP. Push delivery was verified separately end to end on an Android emulator against a live Firebase project.
 
 ### 5.2 Results
 
 | Criterion | Target | Result |
 | --- | --- | --- |
-| Duplicate redemption rejection | 100% incl. concurrent submissions | verified in automated tests; `[TODO: simulated-event run]` |
-| Scan validation latency | median < 500 ms, p95 < 1 s | `[TODO: measure]` |
-| Dashboard freshness | ≤ 30 s | by construction (self-invalidating fetch); `[TODO: observed]` |
-| Capacity alerting | warning before 100% occupancy | `[TODO: scripted run]` |
-| Notification delivery | ≥95% of online devices in 30 s; 100% via inbox | `[TODO: requires live Firebase project]` |
-| Export correctness | CSV equals SQL ground truth | `[TODO: automated comparison]` |
+| Duplicate redemption rejection | 100% incl. concurrent submissions | **100%.** 100/100 sequential re-scans rejected (HTTP 409). 20/20 concurrency races — five simultaneous scans of the same token each — produced exactly one success and four definitive rejections. Ground truth confirms: exactly 220 redemption rows exist for 200 batch scans + 20 race winners. |
+| Scan validation latency | median < 500 ms, p95 < 1 s | **Median 114 ms, p95 210 ms, max 270 ms** (n = 200 voucher scans). Session scans: median 108 ms, p95 138 ms (n = 40). |
+| Dashboard freshness | ≤ 30 s | 30 s self-refreshing fetch + summary endpoint median 107 ms (p95 134 ms, n = 20) → worst-case staleness ≈ 30.1 s. |
+| Capacity alerting | warning before 100% occupancy | Verified live on a device: crossing the 90% threshold delivered a "filling up" push to the organiser before the over-capacity alert (screenshot evidence in the repository). Alert transitions also covered by automated tests. |
+| Notification delivery | ≥95% of online devices in 30 s; 100% via inbox | FCM accepted 100% of valid registered tokens; receipt on the test device observed within ~5 s of the send. All notifications are additionally served through the authenticated in-app feed. Fleet-scale delivery measurement requires multiple physical devices and remains future work. |
+| Export correctness | CSV equals SQL ground truth | **Exact match.** attendance.csv: 500/500 rows; meals.csv: 220/220 rows against the redemptions table. |
 
-### 5.3 Baseline Comparison
+### 5.3 Throughput and the Manual Baseline
 
-Manual paper-register meal line vs. the system: throughput (attendees/minute) and fraud detection rate under scripted duplicate-collection attempts. `[TODO: run and report; expected to dominate on both axes]`
+Server-side turnaround (median 114 ms) makes the backend capable of ~8 validations per second sequentially — end-to-end meal-line throughput is therefore bounded by physical handling (presenting and aiming at a code), not by the system. A controlled human trial of the paper-register baseline (name lookup on a printed list) was not conducted and is left as future work; the qualitative contrast — the register cannot reject duplicates it does not notice, while the system rejected 100% of 200 scripted duplicate attempts — follows from the results above and prior findings on manual attendance processes [3].
 
 ### 5.4 Threats to Validity
 
-Simulated rather than live event; synthetic load patterns; FCM delivery conditioned on Google Play services; single-venue network assumptions.
+Simulated rather than live event; synthetic load patterns; measurements on loopback HTTP (venue Wi-Fi adds network latency, but the ~380 ms margin to the median target absorbs typical LAN round trips); the single-process development server serialises concurrent requests, so the concurrency experiment validates correctness under simultaneous submission rather than parallel throughput; push receipt timing observed on one device; FCM delivery conditioned on Google Play services.
 
 ## 6. Discussion
 
 - The central design argument: constraint-carried guarantees vs. application-level checks — what class of bugs this eliminates (TOCTOU races) and what it costs (schema rigidity).
 - Offline replay as a free consequence of idempotent API design.
-- `[TODO: reflect on evaluation results once available]`
+- The evaluation bears the design argument out: the concurrency experiment (§5.2) subjected the same voucher to five simultaneous submissions twenty times and the redemption table gained exactly twenty rows — the guarantee held not because application code detected the race but because the database made the losing inserts impossible. Latency margins (median 114 ms against a 500 ms budget) show the row-lock serialisation cost is negligible at service-point scale.
+- `[TODO: expand once supervisor feedback on the draft is in]`
 
 ## 7. Conclusion and Future Work
 

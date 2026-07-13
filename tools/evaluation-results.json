@@ -1,0 +1,44 @@
+{
+  "voucher_scan_latency": {
+    "n": 200,
+    "mean_ms": 125.9,
+    "median_ms": 114.0,
+    "p95_ms": 210.5,
+    "max_ms": 270.2
+  },
+  "voucher_scan_success": 200,
+  "sequential_duplicate_rejection": {
+    "attempts": 100,
+    "rejected": 100
+  },
+  "concurrent_duplicate_rejection": {
+    "races": 20,
+    "exactly_one_success": 20
+  },
+  "session_scan_latency": {
+    "n": 40,
+    "mean_ms": 111.6,
+    "median_ms": 108.2,
+    "p95_ms": 137.5,
+    "max_ms": 162.8
+  },
+  "session_duplicate_rejection": {
+    "attempts": 20,
+    "rejected": 20
+  },
+  "analytics_summary_latency": {
+    "n": 20,
+    "mean_ms": 111.0,
+    "median_ms": 107.3,
+    "p95_ms": 134.0,
+    "max_ms": 148.2
+  },
+  "export_correctness": {
+    "meals_csv_rows": 220,
+    "db_redemptions": 220,
+    "match": true,
+    "attendance_csv_rows": 500,
+    "db_attendees": 500,
+    "attendance_match": true
+  }
+}
