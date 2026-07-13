@@ -21,6 +21,14 @@ class DashboardHero extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppBrand.heroGradient,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: AppBrand.tealBright.withValues(alpha: 0.22),
+            blurRadius: 32,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +214,7 @@ class _GaugePainter extends CustomPainter {
       ..shader = const SweepGradient(
         startAngle: start,
         endAngle: start + 2 * math.pi,
-        colors: [AppBrand.amber, Colors.white],
+        colors: [AppBrand.amber, AppBrand.mint],
         transform: GradientRotation(start),
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawArc(

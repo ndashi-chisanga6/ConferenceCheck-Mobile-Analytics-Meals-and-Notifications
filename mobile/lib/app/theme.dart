@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
 
-/// Brand palette. The hero gradient and accent are shared by the
-/// dashboard header, ticket screen and charts so the app reads as one
-/// designed system instead of stock Material.
+/// Brand palette — dark-first. Surfaces step up from [bg] to [surfaceHigh];
+/// [mint] is the single interactive accent, [amber] the warm highlight.
+/// Chart marks use the darker, contrast-validated [chartTeal]/[chartAmber].
 abstract final class AppBrand {
+  // Surfaces
+  static const bg = Color(0xFF0B1118);
+  static const surface = Color(0xFF131C26);
+  static const surfaceHigh = Color(0xFF1A2530);
+  static const line = Color(0x14FFFFFF); // white 8%
+
+  // Accents
+  static const mint = Color(0xFF2DD4BF);
+  static const amber = Color(0xFFFFB454);
+  static const ink = Color(0xFF0A1E28);
   static const teal = Color(0xFF105C58);
   static const tealBright = Color(0xFF17847E);
-  static const ink = Color(0xFF0A1E28);
-  static const amber = Color(0xFFFFB454);
-  static const surface = Color(0xFFF4F6F5);
+
+  // Chart data marks (validated against the dark surface)
+  static const chartTeal = Color(0xFF0FA695);
+  static const chartAmber = Color(0xFFD97706);
+
+  // Status
+  static const ok = mint;
+  static const warn = amber;
+  static const danger = Color(0xFFFF6B6B);
 
   static const heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [tealBright, teal, ink],
-    stops: [0.0, 0.45, 1.0],
+    colors: [tealBright, teal, bg],
+    stops: [0.0, 0.42, 1.0],
   );
 }
 
@@ -22,11 +38,15 @@ ThemeData buildAppTheme() {
   final scheme =
       ColorScheme.fromSeed(
         seedColor: AppBrand.teal,
-        brightness: Brightness.light,
+        brightness: Brightness.dark,
       ).copyWith(
-        primary: AppBrand.teal,
+        primary: AppBrand.mint,
+        onPrimary: AppBrand.ink,
         secondary: AppBrand.amber,
-        surface: Colors.white,
+        onSecondary: AppBrand.ink,
+        surface: AppBrand.surface,
+        onSurface: const Color(0xFFE8EEF2),
+        outline: AppBrand.line,
       );
 
   const display = 'Sora';
@@ -35,7 +55,7 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     fontFamily: 'Inter',
-    scaffoldBackgroundColor: AppBrand.surface,
+    scaffoldBackgroundColor: AppBrand.bg,
     textTheme: const TextTheme(
       headlineMedium: TextStyle(
         fontFamily: display,
@@ -64,7 +84,7 @@ ThemeData buildAppTheme() {
       centerTitle: false,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: AppBrand.surface,
+      backgroundColor: AppBrand.bg,
       foregroundColor: scheme.onSurface,
       titleTextStyle: TextStyle(
         fontFamily: display,
@@ -74,46 +94,50 @@ ThemeData buildAppTheme() {
         color: scheme.onSurface,
       ),
     ),
-    cardTheme: CardThemeData(
+    cardTheme: const CardThemeData(
       elevation: 0,
-      color: Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: AppBrand.surface,
+      margin: EdgeInsets.symmetric(vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: AppBrand.line),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppBrand.surfaceHigh,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: scheme.primary, width: 1.6),
+        borderSide: const BorderSide(color: AppBrand.mint, width: 1.6),
       ),
+      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.65)),
+      prefixIconColor: Colors.white.withValues(alpha: 0.55),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(50),
-        backgroundColor: AppBrand.teal,
+        backgroundColor: AppBrand.mint,
+        foregroundColor: AppBrand.ink,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         textStyle: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(50),
+        foregroundColor: AppBrand.mint,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        side: BorderSide(color: scheme.primary.withValues(alpha: 0.4)),
+        side: BorderSide(color: AppBrand.mint.withValues(alpha: 0.45)),
         textStyle: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 15,
@@ -123,44 +147,64 @@ ThemeData buildAppTheme() {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
+        foregroundColor: AppBrand.mint,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: Colors.white,
-      indicatorColor: scheme.primary.withValues(alpha: 0.12),
+      backgroundColor: const Color(0xFF0E161F),
+      indicatorColor: AppBrand.mint.withValues(alpha: 0.16),
       elevation: 0,
       height: 68,
-      labelTextStyle: const WidgetStatePropertyAll(
-        TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? AppBrand.mint
+              : Colors.white.withValues(alpha: 0.6),
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: states.contains(WidgetState.selected)
+              ? AppBrand.mint
+              : Colors.white.withValues(alpha: 0.6),
+        ),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
+      backgroundColor: AppBrand.surfaceHigh,
+      contentTextStyle: const TextStyle(color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     chipTheme: ChipThemeData(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-        side: BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(999)),
+        side: BorderSide(color: AppBrand.line),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: AppBrand.surface,
       labelStyle: TextStyle(
         fontWeight: FontWeight.w600,
         color: scheme.onSurface,
       ),
     ),
-    listTileTheme: ListTileThemeData(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      iconColor: scheme.primary,
+    listTileTheme: const ListTileThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(14)),
+      ),
+      iconColor: AppBrand.mint,
     ),
-    dividerTheme: DividerThemeData(
-      color: Colors.black.withValues(alpha: 0.06),
-      space: 1,
+    dividerTheme: const DividerThemeData(color: AppBrand.line, space: 1),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppBrand.mint,
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       elevation: 2,
+      backgroundColor: AppBrand.mint,
+      foregroundColor: AppBrand.ink,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
