@@ -17,6 +17,8 @@ void main() {
         ),
       ),
     );
+    // Let the count-up animation reach its target value.
+    await tester.pumpAndSettle();
 
     expect(find.text('128'), findsOneWidget);
     expect(find.text('Checked in'), findsOneWidget);

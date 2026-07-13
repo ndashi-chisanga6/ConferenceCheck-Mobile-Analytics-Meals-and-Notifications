@@ -1,30 +1,73 @@
 import 'package:flutter/material.dart';
 
-ThemeData buildAppTheme() {
-  const seed = Color(0xFF23615F);
+/// Brand palette. The hero gradient and accent are shared by the
+/// dashboard header, ticket screen and charts so the app reads as one
+/// designed system instead of stock Material.
+abstract final class AppBrand {
+  static const teal = Color(0xFF105C58);
+  static const tealBright = Color(0xFF17847E);
+  static const ink = Color(0xFF0A1E28);
+  static const amber = Color(0xFFFFB454);
+  static const surface = Color(0xFFF4F6F5);
 
-  final scheme = ColorScheme.fromSeed(
-    seedColor: seed,
-    brightness: Brightness.light,
+  static const heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [tealBright, teal, ink],
+    stops: [0.0, 0.45, 1.0],
   );
+}
+
+ThemeData buildAppTheme() {
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: AppBrand.teal,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: AppBrand.teal,
+        secondary: AppBrand.amber,
+        surface: Colors.white,
+      );
+
+  const display = 'Sora';
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: const Color(0xFFF6F8F7),
+    fontFamily: 'Inter',
+    scaffoldBackgroundColor: AppBrand.surface,
     textTheme: const TextTheme(
-      headlineSmall: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -0.5),
-      titleLarge: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.3),
-      titleMedium: TextStyle(fontWeight: FontWeight.w600),
+      headlineMedium: TextStyle(
+        fontFamily: display,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.6,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: display,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
+      ),
+      titleLarge: TextStyle(
+        fontFamily: display,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.3,
+      ),
+      titleMedium: TextStyle(
+        fontFamily: display,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.1,
+      ),
       labelLarge: TextStyle(fontWeight: FontWeight.w600),
+      bodyMedium: TextStyle(height: 1.4),
     ),
     appBarTheme: AppBarTheme(
       centerTitle: false,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: const Color(0xFFF6F8F7),
+      backgroundColor: AppBrand.surface,
       foregroundColor: scheme.onSurface,
       titleTextStyle: TextStyle(
+        fontFamily: display,
         fontSize: 20,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
@@ -36,8 +79,8 @@ ThemeData buildAppTheme() {
       color: Colors.white,
       margin: const EdgeInsets.symmetric(vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -56,28 +99,31 @@ ThemeData buildAppTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+        minimumSize: const Size.fromHeight(50),
+        backgroundColor: AppBrand.teal,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
         ),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         side: BorderSide(color: scheme.primary.withValues(alpha: 0.4)),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        textStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
@@ -116,6 +162,11 @@ ThemeData buildAppTheme() {
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      },
     ),
   );
 }

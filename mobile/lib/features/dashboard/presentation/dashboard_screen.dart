@@ -2,7 +2,9 @@ import 'package:conference_check_mobile/core/widgets/error_view.dart';
 import 'package:conference_check_mobile/core/widgets/loading_view.dart';
 import 'package:conference_check_mobile/core/widgets/metric_card.dart';
 import 'package:conference_check_mobile/features/dashboard/application/analytics_providers.dart';
+import 'package:conference_check_mobile/features/dashboard/presentation/widgets/dashboard_hero.dart';
 import 'package:conference_check_mobile/features/dashboard/presentation/widgets/checkins_chart.dart';
+import 'package:conference_check_mobile/features/events/application/events_providers.dart';
 import 'package:conference_check_mobile/features/dashboard/presentation/widgets/meals_chart.dart';
 import 'package:conference_check_mobile/features/dashboard/presentation/widgets/session_capacity_list.dart';
 import 'package:flutter/material.dart';
@@ -23,34 +25,22 @@ class DashboardScreen extends ConsumerWidget {
       ),
       data: (bundle) {
         final summary = bundle.summary;
+        final event = ref.watch(selectedEventProvider);
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(analyticsBundleProvider),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              DashboardHero(summary: summary, eventName: event?.name),
+              const SizedBox(height: 14),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.15,
+                childAspectRatio: 1.35,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
                 children: [
-                  MetricCard(
-                    label: 'Total attendees',
-                    value: '${summary.totalAttendees}',
-                    icon: Icons.people_outline,
-                  ),
-                  MetricCard(
-                    label: 'Checked in',
-                    value: '${summary.checkedInAttendees}',
-                    icon: Icons.how_to_reg,
-                  ),
-                  MetricCard(
-                    label: 'Check-in rate',
-                    value: '${summary.checkInPercentage}%',
-                    icon: Icons.percent,
-                  ),
                   MetricCard(
                     label: 'Meal vouchers',
                     value: '${summary.totalMealVouchers}',
@@ -67,12 +57,7 @@ class DashboardScreen extends ConsumerWidget {
                     icon: Icons.pie_chart_outline,
                   ),
                   MetricCard(
-                    label: 'Sessions',
-                    value: '${summary.totalSessions}',
-                    icon: Icons.meeting_room_outlined,
-                  ),
-                  MetricCard(
-                    label: 'Attendance',
+                    label: 'Session attendance',
                     value: '${summary.totalSessionAttendance}',
                     icon: Icons.event_seat,
                   ),

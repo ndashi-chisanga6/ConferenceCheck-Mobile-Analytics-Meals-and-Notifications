@@ -14,42 +14,74 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final primary = Theme.of(context).colorScheme.primary;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DecoratedBox(
+            Container(
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: scheme.primary.withValues(alpha: 0.1),
+                color: primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(icon, size: 20, color: scheme.primary),
-              ),
+              child: Icon(icon, size: 18, color: primary),
             ),
             const Spacer(),
-            Text(
-              value,
+            _CountUpText(
+              value: value,
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+              style: TextStyle(
+                fontSize: 12.5,
                 fontWeight: FontWeight.w500,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.62),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Animates numeric values counting up from zero; non-numeric values
+/// render statically. A numeric suffix (e.g. "%") is preserved.
+class _CountUpText extends StatelessWidget {
+  const _CountUpText({required this.value, this.style});
+
+  final String value;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = RegExp(r'^(\d+(?:\.\d+)?)(.*)$').firstMatch(value);
+    if (match == null) {
+      return Text(value, style: style);
+    }
+    final target = double.parse(match.group(1)!);
+    final suffix = match.group(2)!;
+    final isWhole = target % 1 == 0;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: target),
+      duration: const Duration(milliseconds: 750),
+      curve: Curves.easeOutCubic,
+      builder: (context, animated, _) => Text(
+        (isWhole ? animated.round().toString() : animated.toStringAsFixed(1)) +
+            suffix,
+        style: style,
       ),
     );
   }
