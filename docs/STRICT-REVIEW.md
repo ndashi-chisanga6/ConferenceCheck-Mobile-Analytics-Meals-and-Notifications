@@ -5,7 +5,7 @@
 
 ## Verdict
 
-The prototype **satisfies the core of the portal listing and the proposal**: analytics, QR meal vouchers with genuine one-time-use enforcement, session capacity tracking with overcrowding alerts, role-secured APIs, CSV exports, and a working role-aware Flutter app. **It does not yet deliver real push notifications** (FCM is stubbed at both ends) and several proposal promises (offline support, publication paper) are outstanding. Suitable evidence for an early progress review; not yet a finished solution.
+The prototype **satisfies the core of the portal listing and the proposal**: analytics, QR meal vouchers with genuine one-time-use enforcement, session capacity tracking with overcrowding alerts, role-secured APIs, CSV exports, and a working role-aware Flutter app. At the time of the original review it **did not yet deliver real push notifications** (FCM was stubbed at both ends) and several proposal promises (offline support, publication paper) were outstanding — **all findings have since been fixed** (see the post-review fix log below); live FCM push delivery is now verified end to end on a device ([evidence](evidence-push-delivered.png)).
 
 ## Runtime evidence
 
@@ -25,12 +25,12 @@ The prototype **satisfies the core of the portal listing and the proposal**: ana
 
 | # | Portal objective | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | Real-time analytics dashboard (progress, rates, trends) | **Met with caveat** — data and charts work; "real-time" is pull-to-refresh, no auto-refresh/push | [02-analytics-dashboard.md](accomplishments/02-analytics-dashboard.md) |
+| 1 | Real-time analytics dashboard (progress, rates, trends) | **Met** — data and charts work; caveat resolved post-review: self-refreshes every 30 s while open, plus pull-to-refresh | [02-analytics-dashboard.md](accomplishments/02-analytics-dashboard.md) |
 | 2 | Meal voucher scanning & redemption across categories | **Met** — 3 categories, camera + manual scan, concurrency-safe one-time use | [03-meal-voucher-system.md](accomplishments/03-meal-voucher-system.md) |
 | 3 | Session attendance with capacity mgmt & overcrowding alerts | **Met** — duplicate prevention, capacity status, warnings; alerts are in-response/dashboard only | [04-session-attendance-capacity.md](accomplishments/04-session-attendance-capacity.md) |
-| 4 | Push notification system | **Partially met** — targeting, recipients, in-app feed, FCM scaffolding all work; **no real FCM delivery** (backend service is a stub; no `google-services.json` in the app) | [05-push-notifications.md](accomplishments/05-push-notifications.md) |
+| 4 | Push notification system | **Met** — targeting, recipients, in-app feed, and (post-review) live FCM v1 delivery verified on a device: organiser send → Laravel → FCM → notification shade ([screenshot](evidence-push-delivered.png)) | [05-push-notifications.md](accomplishments/05-push-notifications.md) |
 | 5 | Reporting and data export | **Met** — 4 organiser-gated CSV exports + mobile download | [06-reports-and-export.md](accomplishments/06-reports-and-export.md) |
-| 6 | Technical documentation & publication-ready paper | **Partially met** — API/schema/architecture/progress docs exist; **no paper started** | [docs/](.) and [mobile/docs/](../mobile/docs/) |
+| 6 | Technical documentation & publication-ready paper | **Substantially met** — API/schema/architecture/progress docs exist; paper is a structured working draft awaiting evaluation numbers ([conferencecheck-paper.md](paper/conferencecheck-paper.md)) | [docs/](.) and [mobile/docs/](../mobile/docs/) |
 
 ## Compliance — proposal (28/03/26)
 
@@ -39,10 +39,10 @@ The prototype **satisfies the core of the portal listing and the proposal**: ana
 | Objective 1: mobile app for conference management | **Met** — role-aware Flutter app, analyzer-clean, tests passing ([07-flutter-mobile-app.md](accomplishments/07-flutter-mobile-app.md)) |
 | Objective 2: analytics dashboard for attendance | **Met** |
 | Objective 3: secure QR meal voucher system | **Met** — incl. the proposed "backend validation and one-time use" mitigation, done properly with row locks |
-| Objective 4: push notifications for real-time updates | **Partially met** (see above) |
+| Objective 4: push notifications for real-time updates | **Met** — live delivery verified (see above) |
 | Scope: Flutter, QR vouchers, dashboard, notifications | On track; declared tech stack (Dart, Flutter, Riverpod, fl_chart, qr_flutter, mobile_scanner, FCM, Laravel, PostgreSQL) matches what is actually used |
 | Out of scope: payments, full web admin, external ticketing | Correctly absent |
-| Risk mitigation: "offline support and retry mechanisms" | **Not implemented** — only manual retry buttons; scans fail without connectivity, nothing is queued |
+| Risk mitigation: "offline support and retry mechanisms" | **Implemented (post-review)** — durable offline scan queue with ordered replay on reconnect (fix log item 5) |
 | Risk mitigation: QR misuse | **Implemented** |
 | Sanctum auth & role security (ethical considerations) | **Met** — verified 401/403 ([01-authentication-and-roles.md](accomplishments/01-authentication-and-roles.md)) |
 
@@ -68,7 +68,7 @@ The prototype **satisfies the core of the portal listing and the proposal**: ana
 
 | Review finding | Status |
 | --- | --- |
-| 1. FCM delivery stub | **Fixed (server-side)** — `FirebaseNotificationService` now performs real FCM v1 sends (service-account JWT → OAuth token → per-device send) with per-token failure counting; demo mode remains the fallback when credentials are absent. Covered by a feature test with faked Google endpoints. Live delivery still requires a Firebase project: set `FIREBASE_PROJECT_ID`/`FIREBASE_CREDENTIALS_PATH`, disable `FIREBASE_DEMO_MODE`, and add `google-services.json` to the Android app. |
+| 1. FCM delivery stub | **Fixed and verified live (2026-07-13)** — `FirebaseNotificationService` performs real FCM v1 sends (service-account JWT → OAuth token → per-device send) with per-token failure counting; demo mode remains the fallback when credentials are absent. Covered by a feature test with faked Google endpoints. A real Firebase project (`conference-app-903a1`) is now configured: `google-services.json` in the Android app, service-account key outside the repo, demo mode off. End-to-end verification on the Android emulator: attendee login registered a real 142-char FCM token, an organiser send reached Google (`sent=1`), and the notification appeared in the device's notification shade ([screenshot](evidence-push-delivered.png)). |
 | 2. Attendee QR fabricated client-side | **Fixed** — new authenticated `GET /events/{event}/attendees/me` endpoint returns the caller's real attendee record; My QR screen now fetches it (loading/error/retry states). Two feature tests added. |
 | 3. Stale api.md notification fields | **Fixed** — send payload (`title`/`message`/`target_type`/`target_session_id`) now documented explicitly; `attendees/me` documented. |
 | 4. Inconsistent capacity vocabulary | **Fixed** — sessions CSV now uses the same `available`/`full`/`over_capacity` terms as the analytics endpoints. |
