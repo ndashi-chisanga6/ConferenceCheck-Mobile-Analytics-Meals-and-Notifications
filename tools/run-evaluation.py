@@ -6,9 +6,10 @@ against a seeded 500-attendee event (tools/seed-evaluation-event.php):
   1. Scan validation latency (sequential batch of voucher scans)
   2. Duplicate redemption rejection (sequential re-scans)
   3. Concurrent duplicate rejection (parallel scans of the same token)
-  4. Session scan latency and duplicate rejection
-  5. Analytics endpoint latency (dashboard freshness bound)
-  6. CSV export correctness vs. database ground truth
+  4. Cross-category independence (redeeming one category leaves the others)
+  5. Session scan latency and duplicate rejection
+  6. Analytics endpoint latency (dashboard freshness bound)
+  7. CSV export correctness vs. database ground truth
 
 Usage:  python tools/run-evaluation.py  (backend must be running)
 Writes: tools/evaluation-results.json
@@ -79,8 +80,28 @@ eid = event['id']
 print(f"Evaluation event id {eid}")
 
 _, vouchers, _ = call('GET', f'/events/{eid}/meal-vouchers', organiser)
-unused = [v['qr_token'] for v in vouchers['data'] if v['status'] == 'unused']
-print(f"{len(unused)} unused vouchers")
+pending = [v for v in vouchers['data'] if v['status'] == 'unused']
+
+by_attendee = {}
+for voucher in pending:
+    by_attendee.setdefault(voucher['attendee_id'], []).append(voucher)
+categories = sorted({v['meal_category_id'] for v in pending})
+print(f"{len(pending)} unused vouchers across {len(categories)} categories "
+      f"for {len(by_attendee)} attendees")
+
+# Reserve attendees who hold a voucher in every category for the cross-category
+# check, and keep their tokens out of every other step, so that check starts
+# from a known-unredeemed set rather than from whatever the earlier steps left.
+CROSS_CATEGORY_ATTENDEES = 20
+reserved = [
+    vs for vs in by_attendee.values()
+    if len({v['meal_category_id'] for v in vs}) == len(categories)
+][:CROSS_CATEGORY_ATTENDEES]
+reserved_tokens = {v['qr_token'] for vs in reserved for v in vs}
+
+# The scan batches draw from every category rather than from one, so the
+# latency figures cover the whole voucher population.
+unused = [v['qr_token'] for v in pending if v['qr_token'] not in reserved_tokens]
 
 # --- 1. sequential voucher scan latency (200 scans) -----------------------
 latencies, outcomes = [], []
@@ -122,7 +143,37 @@ for tok in race_tokens:
 results['concurrent_duplicate_rejection'] = {'races': len(race_tokens), 'exactly_one_success': concurrent_ok}
 print('concurrent races with exactly one success', concurrent_ok, '/', len(race_tokens))
 
-# --- 4. session scan latency + duplicates ---------------------------------
+# --- 4. cross-category independence ----------------------------------------
+# For each reserved attendee, redeem every one of their vouchers in turn. The
+# guarantee under test is that the unique (attendee, category) pair binds a
+# redemption to one category: redeeming breakfast must not consume lunch. Each
+# scan after the first is the same attendee, a different category, and must be
+# accepted; re-scanning the first must still be refused.
+independent = 0
+cross_category_scans = 0
+for group in reserved:
+    ordered = sorted(group, key=lambda v: v['meal_category_id'])
+    accepted = 0
+    for voucher in ordered:
+        status, _, _ = call('POST', f'/events/{eid}/meal-vouchers/scan', scanner,
+                            {'qr_token': voucher['qr_token'], 'device_id': 'eval-cross-category'})
+        cross_category_scans += 1
+        if status == 200:
+            accepted += 1
+    # every category accepted once, and the first is now a duplicate
+    repeat, _, _ = call('POST', f'/events/{eid}/meal-vouchers/scan', scanner,
+                        {'qr_token': ordered[0]['qr_token'], 'device_id': 'eval-cross-category'})
+    if accepted == len(ordered) and repeat == 409:
+        independent += 1
+results['cross_category_independence'] = {
+    'attendees': len(reserved),
+    'categories_per_attendee': len(categories),
+    'all_categories_redeemable': independent,
+    'redemptions': cross_category_scans,
+}
+print('attendees whose categories redeemed independently', independent, '/', len(reserved))
+
+# --- 5. session scan latency + duplicates ---------------------------------
 _, sessions, _ = call('GET', f'/events/{eid}/sessions', organiser)
 session_id = sessions['data'][0]['id']
 _, attendees, _ = call('GET', f'/events/{eid}/attendees', organiser)
@@ -141,7 +192,7 @@ session_dupes = sum(
 results['session_duplicate_rejection'] = {'attempts': 20, 'rejected': session_dupes}
 print('session scan latency', results['session_scan_latency'], '| dupes rejected', session_dupes, '/ 20')
 
-# --- 5. analytics endpoint latency ----------------------------------------
+# --- 6. analytics endpoint latency ----------------------------------------
 analytics_lat = []
 for _ in range(20):
     _, _, ms = call('GET', f'/events/{eid}/analytics/summary', organiser)
@@ -149,7 +200,7 @@ for _ in range(20):
 results['analytics_summary_latency'] = summarise(analytics_lat)
 print('analytics latency', results['analytics_summary_latency'])
 
-# --- 6. export correctness -------------------------------------------------
+# --- 7. export correctness -------------------------------------------------
 status, meals_csv, _ = call('GET', f'/events/{eid}/reports/meals.csv', organiser, raw=True)
 csv_rows = len(list(csv.reader(io.StringIO(meals_csv.decode())))) - 1  # minus header
 _, redemptions, _ = call('GET', f'/events/{eid}/meal-redemptions', organiser)
