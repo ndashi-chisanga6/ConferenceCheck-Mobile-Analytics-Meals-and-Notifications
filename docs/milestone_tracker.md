@@ -1,0 +1,52 @@
+# Milestone Tracker, ConferenceCheck Mobile: Analytics, Meals and Notifications
+
+**Student:** Ndashi Bwalya Chisanga (2021470105) · **Supervisor:** Mr. Mofya Phiri
+**Repository:** https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications (branch `main`)
+**Proposal date:** 28 March 2026 · **Last verified:** 22 September 2026 (55/55 backend tests passing, 213 assertions, PHPStan level 7 clean, Pint clean; `flutter analyze` clean, 19/19 Flutter tests passing; simulated-event evaluation meets every Table 3 target; milestone tags resolve on `main`)
+
+Commit links use the short hash; full history is on the
+[commits page](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commits/main).
+
+## Work Plan Status
+
+| # | Phase (Proposal §6, Table 4) | Planned Weeks | Status | Tag | Evidence and commits |
+|---|---|---|---|---|---|
+| 1 | Proposal and Planning | 1–2 | Done | [`milestone-01-proposal-and-planning`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-01-proposal-and-planning) | [`a673dac`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a673dac) — `docs/Project_proposal_Ndashi_v3.docx`, `docs/api.md`, `docs/database-schema.md` |
+| 2 | Requirements and Design | 3–5 | Done | [`milestone-02-requirements-and-design`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-02-requirements-and-design) | [`a32a615`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a32a615) — conference domain schema, Eloquent models, demo seeder |
+| 3 | Environment and Foundations | 6–7 | Done | [`milestone-03-environment-and-foundations`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-03-environment-and-foundations) | [`fe0a1db`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/fe0a1db) (backend scaffold), [`34e0d2b`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/34e0d2b) (Sanctum auth + roles), [`a3cad4b`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/a3cad4b) (Flutter scaffold) |
+| 4 | Progress Review 1 | 8 | Done | [`milestone-04-progress-review-1`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-04-progress-review-1) | [`d12947f`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/d12947f) — authenticated skeleton: event and attendee management with QR check-in |
+| 5 | Meal Voucher Module | 9–11 | Done | [`milestone-05-meal-voucher-module`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-05-meal-voucher-module) | [`4d1a2ee`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/4d1a2ee) — voucher engine with one-time redemption |
+| 6 | Analytics and Sessions | 12–14 | Done | [`milestone-06-analytics-and-sessions`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-06-analytics-and-sessions) | [`12dea5c`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/12dea5c) (session capacity), [`98a0360`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/98a0360) (analytics + CSV) |
+| 7 | Notifications | 15 | Done | [`milestone-07-notifications`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-07-notifications) | [`dc37173`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/dc37173) — device tokens and delivery records; live FCM v1 verified in [`5b6a8d2`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/5b6a8d2) |
+| 8 | Progress Review 2 (Midway) | 16 | Done | [`milestone-08-progress-review-2-midway`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-08-progress-review-2-midway) | [`7c44415`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/7c44415) — end-to-end demo verified on the emulator, `docs/progress-reports/14-ui-polish-and-emulator-verification.md` |
+| 9 | Reporting and Integration | 17–18 | Done | [`milestone-09-reporting-and-integration`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-09-reporting-and-integration) | CSV export shipped early in milestone 6; [`c1688a1`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/c1688a1) — live end-to-end FCM verification and integration hardening |
+| 10 | Evaluation | 19–20 | Done | [`milestone-10-evaluation`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-10-evaluation) | [`2d1f446`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/2d1f446) — simulated-event evaluation, `docs/validation_report.md`, `tools/evaluation-results.json` |
+| 11 | Documentation and Paper | 21–23 | Done | [`milestone-11-documentation-and-paper`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-11-documentation-and-paper) | Paper drafted early in [`9fcb672`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/9fcb672); consolidated in [`cf423c9`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/cf423c9) — `docs/paper/conferencecheck-paper.md` |
+| 12 | Progress Review 3 / Final Submission | 24 | Not yet due (12/09/2026) | — | To be tagged `milestone-12-final-submission` at submission |
+
+Note on dates: the git history for milestones 1–11 was reconstructed in a
+single working session (2026-07-09/10, with follow-on commits through
+2026-07-14), grouping the actual development into module-by-module commits;
+see the note at the end of `docs/STRICT-REVIEW.md`. Tags mark the commit that
+best represents each phase's completed deliverable, not the calendar date in
+Table 4 — several phases (CSV export, the paper draft) shipped ahead of their
+nominal week.
+
+## Expected Outcomes (Proposal §4), Deliverable Check
+
+| Deliverable | Status | Location |
+|---|---|---|
+| Flutter mobile app: dashboard, meal voucher scan/redemption, session attendance with capacity alerts, notification inbox, report access | Done | [`mobile/lib/features/`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/tree/main/mobile/lib/features); [`docs/accomplishments/07-flutter-mobile-app.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/accomplishments/07-flutter-mobile-app.md) |
+| Backend API extensions: voucher issuance/redemption, session capacity rules, notification dispatch with delivery records, CSV export, tested | Done | [`app/Http/Controllers/Api/`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/tree/main/app/Http/Controllers/Api), [`app/Services/NotificationDispatchService.php`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/app/Services/NotificationDispatchService.php); [`tests/Feature/ConferenceApiTest.php`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/tests/Feature/ConferenceApiTest.php) |
+| Documented REST API contract shared with component 4.3a | Done | [`docs/api.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/api.md) |
+| Evaluation report: acceptance tests, concurrent-redemption and baseline-comparison results | Done | [`docs/validation_report.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/validation_report.md), [`tools/evaluation-results.json`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/tools/evaluation-results.json) (baseline comparison is qualitative only — see §7 of the validation report) |
+| Technical documentation: API reference, database schema, deployment guide | Done | [`docs/api.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/api.md), [`docs/database-schema.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/database-schema.md) |
+| Publication-ready paper | Substantially done | [`docs/paper/conferencecheck-paper.md`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/blob/main/docs/paper/conferencecheck-paper.md) — results filled from the evaluation run; related-work expansion and supervisor-feedback sections remain open (`docs/progress-reports/19-evaluation-run.md`) |
+
+## Progress Review Checkpoints
+
+Counting from the proposal (Week 1 ≈ 28 March 2026):
+
+- **Week 8 review** ≈ 23 May 2026. Evidence: [`milestone-04-progress-review-1`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-04-progress-review-1), the authenticated skeleton application.
+- **Week 16 review (Midway)** ≈ 18 July 2026. Evidence: [`milestone-08-progress-review-2-midway`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-08-progress-review-2-midway), `docs/progress-reports/14-ui-polish-and-emulator-verification.md`, `docs/STRICT-REVIEW.md`.
+- **Week 24 review / Final Submission** ≈ 12 September 2026. Not yet due; documentation and paper consolidation are complete, final submission package pending.
