@@ -28,3 +28,9 @@ yarn-error.log
 /.vscode
 /.zed
 ~$*
+
+# Local agent/editor scratch
+.claude/
+CLAUDE.md
+
+/tools/__pycache__

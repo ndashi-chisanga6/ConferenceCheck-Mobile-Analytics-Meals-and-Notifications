@@ -1,0 +1,19 @@
+# Python packages the Word and PDF rebuild imports, pinned at the versions the
+# committed deliverables were built with.
+#
+#   pip install -r tools/requirements-docs.txt
+#
+# tools/build_docx_deliverables.py imports python-docx.
+# tools/paginate_report.py imports pdfplumber, and pdfplumber pulls in pillow,
+# pypdfium2, charset-normalizer and cryptography, pinned here so a rebuild on
+# another machine resolves the same tree.
+#
+# tools/run-evaluation.py imports only the Python standard library and needs
+# nothing from this file.
+
+python-docx==1.2.0
+pdfplumber==0.11.9
+pillow==12.1.1
+pypdfium2==5.6.0
+charset-normalizer==3.4.6
+cryptography==46.0.6
