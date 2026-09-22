@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Attendee;
 use App\Models\ConferenceSession;
+use App\Models\DeviceToken;
 use App\Models\Event;
 use App\Models\EventNotification;
 use App\Models\MealVoucher;
@@ -81,6 +82,41 @@ class ConferenceApiTest extends TestCase
         $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => 'missing-token'])
             ->assertStatus(404)
             ->assertJsonPath('success', false);
+    }
+
+    public function test_redeeming_one_category_leaves_the_attendees_other_categories_redeemable(): void
+    {
+        Sanctum::actingAs($this->scanner);
+
+        $attendee = Attendee::query()
+            ->where('event_id', $this->event->id)
+            ->whereHas('mealVouchers', fn ($query) => $query->where('status', 'unused'), '>=', 2)
+            ->firstOrFail();
+
+        $vouchers = MealVoucher::query()
+            ->where('attendee_id', $attendee->id)
+            ->where('status', 'unused')
+            ->orderBy('meal_category_id')
+            ->get();
+
+        $first = $vouchers->first();
+        $second = $vouchers->firstWhere('meal_category_id', '!=', $first->meal_category_id);
+        $this->assertNotNull($second, 'the attendee needs vouchers in two different categories');
+
+        $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => $first->qr_token])
+            ->assertOk()
+            ->assertJsonPath('data.voucher.status', 'redeemed');
+
+        // Redeeming one category must not consume the others: the guarantee is
+        // per (attendee, category), not per attendee.
+        $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => $second->qr_token])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.voucher.status', 'redeemed');
+
+        $this->assertSame('redeemed', $first->fresh()->status);
+        $this->assertSame('redeemed', $second->fresh()->status);
+        $this->assertNotSame($first->meal_category_id, $second->meal_category_id);
     }
 
     public function test_valid_session_attendance_scan(): void
@@ -173,6 +209,96 @@ class ConferenceApiTest extends TestCase
             ->assertJsonPath('data.notification.status', 'sent');
 
         @unlink($credentialsPath);
+    }
+
+    public function test_delivery_is_recorded_against_each_recipient_individually(): void
+    {
+        $reachable = User::query()->create([
+            'name' => 'Reachable Attendee',
+            'email' => 'reachable@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'attendee',
+        ]);
+        $unreachable = User::query()->create([
+            'name' => 'Unreachable Attendee',
+            'email' => 'unreachable@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'attendee',
+        ]);
+
+        $attendees = Attendee::query()->where('event_id', $this->event->id)->take(2)->get();
+        $attendees[0]->update(['user_id' => $reachable->id]);
+        $attendees[1]->update(['user_id' => $unreachable->id]);
+
+        DeviceToken::query()->create(['user_id' => $reachable->id, 'token' => 'good-token', 'platform' => 'android']);
+        DeviceToken::query()->create(['user_id' => $unreachable->id, 'token' => 'bad-token', 'platform' => 'android']);
+
+        config([
+            'services.firebase.demo_mode' => false,
+            'services.firebase.credentials_path' => $this->fakeCredentials(),
+            'services.firebase.project_id' => 'test-project',
+        ]);
+
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'fake-access-token']),
+            'fcm.googleapis.com/*' => function ($request) {
+                return str_contains((string) $request->body(), 'bad-token')
+                    ? Http::response(['error' => ['status' => 'UNREGISTERED']], 404)
+                    : Http::response(['name' => 'projects/test-project/messages/1']);
+            },
+        ]);
+
+        Sanctum::actingAs($this->organiser);
+
+        $response = $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Hall change',
+            'message' => 'Keynote moved to Hall B.',
+            'target_type' => 'all_attendees',
+        ])->assertOk();
+
+        $notificationId = $response->json('data.notification.id');
+
+        // The recipient whose token Firebase accepted is the only one marked
+        // sent; the one whose token was refused is marked failed with a reason.
+        $this->assertDatabaseHas('notification_recipients', [
+            'notification_id' => $notificationId,
+            'user_id' => $reachable->id,
+            'status' => 'sent',
+        ]);
+        $this->assertDatabaseHas('notification_recipients', [
+            'notification_id' => $notificationId,
+            'user_id' => $unreachable->id,
+            'status' => 'failed',
+        ]);
+
+        // Attendees with no registered device were never pushed to, so they
+        // stay pending and reach the message through the in-app inbox.
+        $this->assertDatabaseHas('notification_recipients', [
+            'notification_id' => $notificationId,
+            'user_id' => null,
+            'status' => 'pending',
+        ]);
+    }
+
+    private function fakeCredentials(): string
+    {
+        $opensslConfig = [];
+        $bundledConfig = dirname(PHP_BINARY).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'ssl'.DIRECTORY_SEPARATOR.'openssl.cnf';
+        if (PHP_OS_FAMILY === 'Windows' && file_exists($bundledConfig)) {
+            $opensslConfig = ['config' => $bundledConfig];
+        }
+
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA] + $opensslConfig);
+        $this->assertNotFalse($key);
+        openssl_pkey_export($key, $privateKey, null, $opensslConfig);
+
+        $path = (string) tempnam(sys_get_temp_dir(), 'fcm');
+        file_put_contents($path, json_encode([
+            'client_email' => 'service-account@test-project.iam.gserviceaccount.com',
+            'private_key' => $privateKey,
+        ]));
+
+        return $path;
     }
 
     public function test_session_scan_records_the_scanning_device(): void

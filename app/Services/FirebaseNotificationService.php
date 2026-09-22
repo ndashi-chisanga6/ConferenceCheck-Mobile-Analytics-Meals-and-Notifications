@@ -11,8 +11,12 @@ use Throwable;
 class FirebaseNotificationService
 {
     /**
+     * `token_results` carries the outcome of each individual token, so a caller
+     * can record delivery against the recipient that token belongs to rather
+     * than applying one aggregate outcome to everybody.
+     *
      * @param  array<int, string>  $tokens
-     * @return array{success: bool, demo: bool, sent_count: int, failed_count: int}
+     * @return array{success: bool, demo: bool, sent_count: int, failed_count: int, token_results: array<string, bool>}
      */
     public function send(array $tokens, string $title, string $message): array
     {
@@ -24,7 +28,13 @@ class FirebaseNotificationService
         if ($demoMode || ! is_string($credentials) || $credentials === '' || ! is_string($projectId) || $projectId === '' || ! file_exists($credentials)) {
             Log::info('Firebase demo notification sent', compact('tokens', 'title', 'message'));
 
-            return ['success' => true, 'demo' => true, 'sent_count' => count($tokens), 'failed_count' => 0];
+            return [
+                'success' => true,
+                'demo' => true,
+                'sent_count' => count($tokens),
+                'failed_count' => 0,
+                'token_results' => array_fill_keys($tokens, true),
+            ];
         }
 
         try {
@@ -32,17 +42,26 @@ class FirebaseNotificationService
         } catch (Throwable $exception) {
             Log::error('Firebase authentication failed: '.$exception->getMessage());
 
-            return ['success' => false, 'demo' => false, 'sent_count' => 0, 'failed_count' => count($tokens)];
+            return [
+                'success' => false,
+                'demo' => false,
+                'sent_count' => 0,
+                'failed_count' => count($tokens),
+                'token_results' => array_fill_keys($tokens, false),
+            ];
         }
 
         $sent = 0;
         $failed = 0;
+        $tokenResults = [];
 
         foreach ($tokens as $token) {
             $response = Http::withToken($accessToken)->post(
                 "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send",
                 ['message' => ['token' => $token, 'notification' => ['title' => $title, 'body' => $message]]]
             );
+
+            $tokenResults[$token] = $response->successful();
 
             if ($response->successful()) {
                 $sent++;
@@ -60,7 +79,13 @@ class FirebaseNotificationService
             }
         }
 
-        return ['success' => $tokens === [] || $sent > 0, 'demo' => false, 'sent_count' => $sent, 'failed_count' => $failed];
+        return [
+            'success' => $tokens === [] || $sent > 0,
+            'demo' => false,
+            'sent_count' => $sent,
+            'failed_count' => $failed,
+            'token_results' => $tokenResults,
+        ];
     }
 
     /**
