@@ -4,7 +4,7 @@
 **Student:** Ndashi Bwalya Chisanga, computer number 2021470105
 **Supervisor:** Mr. Mofya Phiri
 **Repository:** https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications
-**Validated state:** tag `milestone-10-evaluation`
+**Validated state:** tag `milestone-12-final-submission`
 
 
 This document reports the validation results and describes the path that
@@ -63,16 +63,16 @@ Source: `tools/evaluation-results.json`, produced by
 
 ## 0.1 Auditable evidence
 
-**Validated state.** Tag `milestone-10-evaluation`. The exact commit it
+**Validated state.** Tag `milestone-12-final-submission`. The exact commit it
 resolves to is verifiable with:
 
 ```bash
-git rev-list -n1 milestone-10-evaluation
+git rev-list -n1 milestone-12-final-submission
 ```
 
-(`milestone-10-evaluation` is an annotated tag; a bare `git rev-parse` on it
+(`milestone-12-final-submission` is an annotated tag; a bare `git rev-parse` on it
 returns the tag object's own hash, not the commit, so use `rev-list -n1` or
-`rev-parse milestone-10-evaluation^{commit}` to resolve to the commit.)
+`rev-parse milestone-12-final-submission^{commit}` to resolve to the commit.)
 
 The tag table in `docs/evidence_index.md` records the same mapping and what
 is present in that tree.

@@ -36,7 +36,7 @@ from the submission date of 28/03/2026.
 | Reporting and Integration | 01/08/2026 | [`milestone-09-reporting-and-integration`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-09-reporting-and-integration) | [`c1688a1`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/c1688a1) | `app/Http/Controllers/Api/ReportController.php`, live FCM verification |
 | Evaluation | 15/08/2026 | [`milestone-10-evaluation`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-10-evaluation) | [`2d1f446`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/2d1f446) | `docs/validation_report.md`, `tools/evaluation-results.json` |
 | Documentation and Paper | 05/09/2026 | [`milestone-11-documentation-and-paper`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-11-documentation-and-paper) | [`9fcb672`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/9fcb672), [`cf423c9`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/cf423c9) | `docs/paper/conferencecheck-paper.md` |
-| Progress Review 3 / Final Submission | 12/09/2026 | not yet tagged | — | pending |
+| Progress Review 3 / Final Submission | 12/09/2026 | [`milestone-12-final-submission`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/releases/tag/milestone-12-final-submission) | resolves via the tag, see below | `docs/deliverables/` (Word and PDF), `docs/validation_report.md`, `docs/paper/conferencecheck-paper.md`, `tools/evaluation-results.json` |
 
 ## What each tag points at
 
@@ -57,6 +57,7 @@ https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-N
 | `milestone-09-reporting-and-integration` | `c1688a1` | 2026-07-13 | Live FCM push delivery verified end to end (integration hardening; CSV export itself shipped in milestone 6) |
 | `milestone-10-evaluation` | `2d1f446` | 2026-07-14 | Simulated-event evaluation run and results filled into the paper |
 | `milestone-11-documentation-and-paper` | `cf423c9` | 2026-07-14 | Documentation and review consolidation (paper drafting started earlier, in `9fcb672`) |
+| `milestone-12-final-submission` | resolve with `git rev-list -n1 milestone-12-final-submission` | 2026-09-22 | Multi-category evaluation run, per-recipient delivery records, Word and PDF deliverables, and the validation report and paper that describe them |
 
 Note: the git history behind these tags was reconstructed on 2026-07-10 from
 the working prototype, grouping development into module-by-module commits

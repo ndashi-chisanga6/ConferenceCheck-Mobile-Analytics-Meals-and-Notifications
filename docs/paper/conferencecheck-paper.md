@@ -9,7 +9,7 @@ Supervisor: Mr. Mofya Phiri
 September 2026
 
 Repository: https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications
-Validated state: tag `milestone-10-evaluation`
+Validated state: tag `milestone-12-final-submission`
 
 
 ## Declaration
@@ -1141,5 +1141,5 @@ contents, tables and figures lists no longer match the rendered documents.
 Validated state, and the commit it resolves to:
 
 ```bash
-git rev-list -n1 milestone-10-evaluation
+git rev-list -n1 milestone-12-final-submission
 ```
