@@ -1,11 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "ndashi-chisanga6/conferencecheck-mobile-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "ConferenceCheck Mobile: Analytics, Meals and Notifications — Laravel REST API backend (component 4.3b).",
     "keywords": [
-        "laravel",
-        "framework"
+        "conference-management",
+        "qr-code",
+        "meal-voucher",
+        "event-analytics",
+        "laravel"
     ],
     "license": "MIT",
     "require": {

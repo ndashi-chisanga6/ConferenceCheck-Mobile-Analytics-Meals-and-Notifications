@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite it using the metadata below."
+title: "ConferenceCheck Mobile: Analytics, Meals and Notifications"
+authors:
+  - family-names: "Chisanga"
+    given-names: "Ndashi Bwalya"
+date-released: "2026-09-01"
+version: "milestone-10-evaluation"
+repository-code: "https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications"
+license: "MIT"
+keywords:
+  - "conference management"
+  - "QR code"
+  - "meal voucher redemption"
+  - "event analytics"
+  - "Flutter"
+  - "Laravel"
