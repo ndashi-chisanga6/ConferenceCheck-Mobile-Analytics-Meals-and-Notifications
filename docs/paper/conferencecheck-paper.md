@@ -187,10 +187,10 @@ Quick Response (QR) codes provide a mature, standardised mechanism for
 machine-readable identification [1], and QR-based attendance has been
 proposed as a way to reclaim the lecture time that manual registers consume
 [3]. Cloud push-messaging services such as Firebase Cloud
-Messaging provide reliable, low-latency delivery of updates to mobile
-devices at no marginal cost [6], and modern cross-platform toolkits such as
+Messaging exist to send messages to mobile devices reliably [6], within the
+delivery guarantees Section 2 sets out, and modern cross-platform toolkits such as
 Flutter allow a single codebase to deliver the required scanning, charting
-and notification functionality [14]. This project applies these
+and notification functionality [16]. This project applies these
 technologies to conference operations as component 4.3b of the
 ConferenceCheck capstone programme. A sibling component, 4.3a, handles the
 core attendee check-in capture and offline synchronisation engine
@@ -307,7 +307,7 @@ motivates the server-side single-use redemption design evaluated in this
 report, in which the database, not the scanning client, is the arbiter of
 whether a voucher has already been consumed.
 
-For the redemption transaction itself, Helland [11] provides the canonical
+For the redemption transaction itself, Helland [13] provides the canonical
 treatment of idempotence in distributed systems: operations that may be
 retried, as scans on unreliable venue networks will be, must be designed so
 that repeated submission cannot produce repeated effect. In this project,
@@ -328,20 +328,24 @@ the budget for scan-validation round trips at a catering service point where
 queue throughput matters, and is the threshold against which Section 6.4
 reports the measured results.
 
-For attendee communication, Firebase Cloud Messaging documentation [6]
-describes a store-and-forward push architecture with per-device
-registration tokens; delivery is best-effort, tokens expire, and devices
+For attendee communication, Firebase Cloud Messaging documentation describes
+an architecture in which each app instance registers for messages and is
+identified by its own registration token [7], and states that a message
+accepted by FCM has not thereby been delivered: a message for an offline
+device is stored and delivered when the device reconnects, and delivery may be
+delayed or may not happen at all [8]. Delivery is therefore best-effort rather
+than guaranteed, tokens expire, and devices
 without Google Play services are unreachable, all of which motivate the
 dual-channel design evaluated in Section 6.7, in which every notification is
 also persisted to an in-app inbox with per-recipient delivery records. The
 service interface between the mobile client and backend follows the REST
-architectural style [7]; endpoint authentication uses bearer tokens as
-specified in RFC 6750 [8] and implemented by Laravel Sanctum [9], with
+architectural style [9]; endpoint authentication uses bearer tokens as
+specified in RFC 6750 [10] and implemented by Laravel Sanctum [11], with
 mobile-specific hardening guided by the OWASP Mobile Application Security
-Verification Standard [10]. The client architecture applies the separation
+Verification Standard [12]. The client architecture applies the separation
 of presentation, state and data access descended from the Model-View-
-Controller pattern [12], realised in Flutter's widget and provider model
-[14].
+Controller pattern [14], realised in Flutter's widget and provider model
+[16].
 
 Taken together, this body of work indicates that the individual technologies
 are mature, but that existing systems apply them piecemeal: attendance tools
@@ -356,7 +360,7 @@ rather than to convention.
 ### 3.1 System architecture and the component 4.3a / 4.3b boundary
 
 The system is a client-server architecture with three tiers: a Flutter
-mobile application, the CMS v4 Laravel backend exposing a REST API [7], and
+mobile application, the CMS v4 Laravel backend exposing a REST API [9], and
 a PostgreSQL database, with Firebase Cloud Messaging as the external push
 channel.
 
@@ -370,14 +374,14 @@ channel.
 | Push dispatch: Laravel → Firebase Cloud Messaging (external) then to the device, for component 4.3b notifications only | |
 
 The mobile application follows a layered structure derived from the
-Model-View-Controller separation [12]: a presentation layer of Flutter
+Model-View-Controller separation [14]: a presentation layer of Flutter
 widgets, a state layer of Riverpod providers holding screen state and
 orchestrating asynchronous calls, and a data layer of repository classes
 wrapping a single authenticated REST client. Platform services, camera
 access via `mobile_scanner` and push token registration via
 `firebase_messaging`, are isolated behind interfaces so that they can be
 stubbed in widget tests. The backend extends the CMS v4 Laravel application.
-Every endpoint requires a Sanctum-issued bearer token [8, 9] and returns a
+Every endpoint requires a Sanctum-issued bearer token [10, 11] and returns a
 uniform JSON envelope with `success`, `message` and `data` fields.
 Authorisation is role-based: organiser accounts manage events and view
 analytics, scanner accounts may only submit scan validations, and attendee
@@ -415,7 +419,7 @@ database transaction, the server locks the voucher row
 on the voucher identifier guarantees that if two scanners submit the same
 token concurrently, exactly one insert succeeds and the other receives a
 definitive "already redeemed" response naming the earlier redemption time
-[11]. The redemption record, including the redeeming device identifier and
+[13]. The redemption record, including the redeeming device identifier and
 timestamp, is immutable thereafter, providing a complete audit trail for
 post-event reconciliation. This design places the single-use guarantee in
 the database's constraint machinery rather than in application-level
@@ -464,8 +468,8 @@ in Section 6.5.
 Organisers compose notifications targeted at all attendees or at
 role-scoped groups. The dispatch service resolves the target set into
 per-recipient delivery records, then delivers via Firebase Cloud Messaging
-[6] to every registered device token. Because FCM delivery is best-effort
-[6], every notification is simultaneously persisted and served through an
+to every registered device token [7]. Because FCM delivery is best-effort
+[8], every notification is simultaneously persisted and served through an
 authenticated in-app inbox, so an attendee whose device was offline, or
 lacks Google Play services, still receives the message on next application
 open; the per-recipient records make delivery auditable.
@@ -490,11 +494,11 @@ Cloud Messaging, Git for version control.
 
 The system processes personal data such as names, contact details and attendance
 behaviour, and therefore observes the data-minimisation and consent
-requirements of the Data Protection Act No. 3 of 2021 of Zambia [13].
+requirements of the Data Protection Act No. 3 of 2021 of Zambia [15].
 Attendee records hold only fields required for event operations, QR tokens
 are opaque and carry no personal data, client-server traffic is encrypted in
 transit, API access is authenticated and role-scoped following OWASP MASVS
-guidance [10], and evaluation is performed exclusively on synthetically
+guidance [12], and evaluation is performed exclusively on synthetically
 seeded data, so no real attendee data was processed during development or
 evaluation. The use of artificial intelligence tools during development is
 disclosed in full in **Appendix A**, within the scope limits set out in
@@ -745,7 +749,7 @@ behaviour for an invalid token and not a defect. Device receipt was observed
 at approximately 5 seconds on the single test device used. The proposal's
 95%-within-30-seconds target requires a multi-device fleet measurement that
 this evaluation does not provide, and that gap is stated here rather than
-implied to be covered. Because delivery is best-effort by design [6], the
+implied to be covered. Because delivery is best-effort by design [8], the
 in-app inbox gives 100% eventual delivery to any attendee who opens the
 application, independent of push reachability, which is the property the
 dual-channel design in Section 3.6 exists to guarantee.
@@ -867,7 +871,7 @@ claim that this evaluation cannot support with a sample of one device, and
 is recorded here as future work rather than as met.
 
 **iOS is unverified.** Development and testing targeted Android; iOS
-compatibility is expected from Flutter's cross-platform model [14] but was
+compatibility is expected from Flutter's cross-platform model [16] but was
 not systematically verified within this project.
 
 ## 9. Conclusion
@@ -915,24 +919,30 @@ was unable to complete.
    Kaufmann, 1993.
 6. Google, "Firebase Cloud Messaging," *Firebase Documentation*, 2025.
    [Online]. Available: https://firebase.google.com/docs/cloud-messaging
-7. R. T. Fielding, "Architectural styles and the design of network-based
+7. Google, "FCM architectural overview," *Firebase Documentation*, 2025.
+   [Online]. Available:
+   https://firebase.google.com/docs/cloud-messaging/fcm-architecture
+8. Google, "Understanding message delivery," *Firebase Documentation*, 2025.
+   [Online]. Available:
+   https://firebase.google.com/docs/cloud-messaging/understand-delivery
+9. R. T. Fielding, "Architectural styles and the design of network-based
    software architectures," Ph.D. dissertation, Univ. of California,
    Irvine, CA, USA, 2000.
-8. M. Jones and D. Hardt, "The OAuth 2.0 Authorization Framework: Bearer
+10. M. Jones and D. Hardt, "The OAuth 2.0 Authorization Framework: Bearer
    Token Usage," IETF RFC 6750, Oct. 2012.
-9. Laravel, "Laravel Sanctum," *Laravel Documentation*, 2025. [Online].
+11. Laravel, "Laravel Sanctum," *Laravel Documentation*, 2025. [Online].
    Available: https://laravel.com/docs/sanctum
-10. OWASP Foundation, *OWASP Mobile Application Security Verification
+12. OWASP Foundation, *OWASP Mobile Application Security Verification
     Standard (MASVS)*, v2.0, 2023. [Online]. Available: https://mas.owasp.org
-11. P. Helland, "Idempotence is not a medical condition," *Communications
+13. P. Helland, "Idempotence is not a medical condition," *Communications
     of the ACM*, vol. 55, no. 5, pp. 56-65, 2012.
-12. G. E. Krasner and S. T. Pope, "A cookbook for using the
+14. G. E. Krasner and S. T. Pope, "A cookbook for using the
     Model-View-Controller user interface paradigm in Smalltalk-80,"
     *Journal of Object-Oriented Programming*, vol. 1, no. 3, pp. 26-49,
     1988.
-13. Republic of Zambia, *Data Protection Act No. 3 of 2021*. Lusaka:
+15. Republic of Zambia, *Data Protection Act No. 3 of 2021*. Lusaka:
     Government Printer, 2021.
-14. Google, "Flutter documentation," 2025. [Online]. Available:
+16. Google, "Flutter documentation," 2025. [Online]. Available:
     https://docs.flutter.dev
 
 Fourteen of the fifteen sources in the approved proposal are cited above. The
@@ -1282,18 +1292,21 @@ not evidence of anything, and because one entry did not survive it.
 | [3] Masalha and Hirzallah, IJACSA 5(3), pp. 75-79, 2014 | Correct; volume, issue, pages and year all match | **Overstated, and corrected.** The report previously said this work "evaluated" a system and "found substantial reductions" in processing time and recording error, and that it "measured processing time and recording accuracy... against a real manual register". The full text contains no experiment, no measurement and no manual-register comparison; it is a design proposal with an analysis section. Four passages were rewritten. What the source does support, and is still cited for, is the photographed-code weakness, which its analysis states directly |
 | [4] Few, O'Reilly Media, 2006 | Correct; first edition, publisher and year match | Cited for the single-screen dashboard principle, which the book argues |
 | [5] Nielsen, Morgan Kaufmann, 1993 | Correct as a real 1993 edition. The original hardcover was Academic Press; Morgan Kaufmann published the 1993 paperback, which is the form cited | Cited for the response-time thresholds, which the book sets out |
-| [6] Firebase Cloud Messaging documentation | Live and official | Supported, but by pages below the URL cited: per-device registration tokens appear in the architecture page, and store-and-forward behaviour and non-guaranteed delivery in the delivery pages. The specific pages should be cited rather than the documentation root |
-| [7] Fielding, PhD dissertation, UC Irvine, 2000 | Correct; institution and year match | Cited for the REST architectural style, which the dissertation introduces |
-| [8] RFC 6750, Jones and Hardt, Oct. 2012 | Correct; authors, number, title and date match the RFC Editor record | Cited for bearer-token usage, which is the RFC's subject |
-| [9] Laravel Sanctum documentation | Live and official | Cited for token authentication, which it documents |
-| [10] OWASP MASVS v2.0, 2023 | Correct; v2.0.0 was released in April 2023 | Cited for mobile hardening guidance, which it provides |
-| [11] Helland, *CACM* 55(5), pp. 56-65, 2012 | Correct; volume, issue, pages and year all match | Cited for idempotence under retry, which is the article's argument |
-| [12] Krasner and Pope, *JOOP* 1(3), pp. 26-49, 1988 | Correct; volume, issue, pages and year all match | Cited for the Model-View-Controller separation, which the paper describes |
-| [13] Data Protection Act No. 3 of 2021, Zambia | Correct; the Act exists under that number and year | Cited for data-minimisation and consent obligations, which it imposes |
-| [14] Flutter documentation | Live and official | Cited for cross-platform delivery from one codebase |
+| [6] Firebase Cloud Messaging documentation, landing page | Live and official | **Narrowed.** The page describes FCM as a solution that "lets you reliably send messages"; it does not mention latency or cost. Section 1 had cited it for "reliable, low-latency delivery... at no marginal cost", so the latency and cost claims were dropped. What remains is what the page states |
+| [7] Google, "FCM architectural overview" | Live and official | **Added** so that the registration-token claim cites the page that makes it: "An instance of a client app registers to receive messages, obtaining a registration token that uniquely identifies the app instance" |
+| [8] Google, "Understanding message delivery" | Live and official | **Added** so that the best-effort claim cites the page that makes it. The page states that a message ID returned to the sender means the message "was accepted for delivery", not delivered, that a message for an offline device is stored until the device reconnects, and that delivery may be delayed |
+| [9] Fielding, PhD dissertation, UC Irvine, 2000 | Correct; institution and year match | Cited for the REST architectural style, which the dissertation introduces |
+| [10] RFC 6750, Jones and Hardt, Oct. 2012 | Correct; authors, number, title and date match the RFC Editor record | Cited for bearer-token usage, which is the RFC's subject |
+| [11] Laravel Sanctum documentation | Live and official | Cited for token authentication, which it documents |
+| [12] OWASP MASVS v2.0, 2023 | Correct; v2.0.0 was released in April 2023 | Cited for mobile hardening guidance, which it provides |
+| [13] Helland, *CACM* 55(5), pp. 56-65, 2012 | Correct; volume, issue, pages and year all match | Cited for idempotence under retry, which is the article's argument |
+| [14] Krasner and Pope, *JOOP* 1(3), pp. 26-49, 1988 | Correct; volume, issue, pages and year all match | Cited for the Model-View-Controller separation, which the paper describes |
+| [15] Data Protection Act No. 3 of 2021, Zambia | Correct; the Act exists under that number and year | Cited for data-minimisation and consent obligations, which it imposes |
+| [16] Flutter documentation | Live and official | Cited for cross-platform delivery from one codebase |
 | Schwaber and Sutherland, *The Scrum Guide*, 2020 | The document exists as cited | **Withdrawn.** Not cited anywhere in this report, and Scrum is not discussed in it. Removed from the list rather than left as an entry nothing refers to |
 
-Two outstanding items follow from this check and are stated rather than
-quietly left: reference [6] should cite the specific Firebase pages rather than
-the documentation root, and the related-work base still needs the recent
-event-technology literature that Section 2 does not yet cover.
+One outstanding item follows from this check and is stated rather than quietly
+left: the related-work base still needs the recent event-technology literature
+that Section 2 does not yet cover. The Firebase citation, which this check
+first recorded as pointing at the documentation root rather than at the pages
+carrying the claims, has since been split into [6], [7] and [8] above.
