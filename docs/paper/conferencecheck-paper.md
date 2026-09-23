@@ -55,74 +55,74 @@ report does not re-derive figures independently of it.
 | 1.4 | Scope | 6 |
 | 1.5 | Contributions | 6 |
 | 2 | **Literature Review** | 7 |
-| 3 | **Methodology** | 8 |
-| 3.1 | System architecture and the component 4.3a / 4.3b boundary | 8 |
-| 3.2 | Data model and integrity guarantees | 9 |
+| 3 | **Methodology** | 9 |
+| 3.1 | System architecture and the component 4.3a / 4.3b boundary | 9 |
+| 3.2 | Data model and integrity guarantees | 10 |
 | 3.3 | The voucher redemption protocol | 10 |
-| 3.4 | Session attendance and capacity alerting | 10 |
-| 3.5 | Offline operation | 10 |
+| 3.4 | Session attendance and capacity alerting | 11 |
+| 3.5 | Offline operation | 11 |
 | 3.6 | Analytics, notifications and reporting | 11 |
-| 3.7 | Tools and technologies | 11 |
-| 3.8 | Ethical considerations and AI usage disclosure | 11 |
+| 3.7 | Tools and technologies | 12 |
+| 3.8 | Ethical considerations and AI usage disclosure | 12 |
 | 4 | **Implementation** | 12 |
 | 4.1 | Code organisation | 12 |
-| 4.2 | Defects found and fixed during review | 12 |
+| 4.2 | Defects found and fixed during review | 13 |
 | 5 | **Evaluation Methodology** | 13 |
-| 5.1 | Seeded evaluation dataset | 13 |
-| 5.2 | Guarding against an artificially easy measurement | 13 |
+| 5.1 | Seeded evaluation dataset | 14 |
+| 5.2 | Guarding against an artificially easy measurement | 14 |
 | 5.3 | Metrics and acceptance criteria | 14 |
-| 6 | **Results** | 14 |
+| 6 | **Results** | 15 |
 | 6.1 | Automated correctness verification | 15 |
-| 6.2 | Meal voucher redemption correctness | 15 |
+| 6.2 | Meal voucher redemption correctness | 16 |
 | 6.3 | Session attendance and capacity correctness | 16 |
 | 6.4 | Latency against the proposal's targets | 16 |
-| 6.5 | Analytics dashboard freshness | 16 |
-| 6.6 | Export correctness | 16 |
+| 6.5 | Analytics dashboard freshness | 17 |
+| 6.6 | Export correctness | 17 |
 | 6.7 | Notification delivery | 17 |
 | 6.8 | Baseline comparison, and its limits | 17 |
-| 7 | **Discussion** | 17 |
-| 8 | **Limitations** | 18 |
-| 9 | **Conclusion** | 19 |
+| 7 | **Discussion** | 18 |
+| 8 | **Limitations** | 19 |
+| 9 | **Conclusion** | 20 |
 |  | References | 20 |
 | A | **Appendix A. Artificial intelligence usage disclosure** | 21 |
 | A.1 | Purpose and scope | 21 |
-| A.2 | Tools and scope of assistance, as bounded by the proposal | 21 |
-| A.3 | Validation of AI-assisted output | 21 |
-| A.4 | Honest statement of disclosure limitations | 21 |
+| A.2 | Tools and scope of assistance, as bounded by the proposal | 22 |
+| A.3 | Validation of AI-assisted output | 22 |
+| A.4 | Honest statement of disclosure limitations | 22 |
 | B | **Appendix B. Defects found and fixed during the strict review** | 22 |
-| C | **Appendix C. Full evaluation figures** | 23 |
-| D | **Appendix D. Reproduction commands** | 24 |
-| E | **Appendix E. The running system, against each objective** | 25 |
-| E.1 | What these figures do and do not show | 34 |
-| F | **Appendix F. Reference verification record** | 35 |
+| C | **Appendix C. Full evaluation figures** | 24 |
+| D | **Appendix D. Reproduction commands** | 25 |
+| E | **Appendix E. The running system, against each objective** | 26 |
+| E.1 | What these figures do and do not show | 35 |
+| F | **Appendix F. Reference verification record** | 36 |
 
 ## List of Tables
 
 | Table | Title | Section | Page |
 |---|---|---|---|
-| 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 9 |
-| 2 | Headline results against the proposal's Table 3 acceptance criteria | 6 | 14 |
+| 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 10 |
+| 2 | Headline results against the proposal's Table 3 acceptance criteria | 6 | 15 |
 | 3 | Adversarial and live checks, strict review | 6.1 | 15 |
 | 4 | Latency by endpoint against the proposal's targets | 6.4 | 16 |
-| 5 | Export correctness, CSV rows against database ground truth | 6.6 | 16 |
-| B1 | Defects found during review and their fixes | B | 22 |
-| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 23 |
-| F1 | Verification of every reference, including the one withdrawn | F | 35 |
+| 5 | Export correctness, CSV rows against database ground truth | 6.6 | 17 |
+| B1 | Defects found during review and their fixes | B | 23 |
+| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 24 |
+| F1 | Verification of every reference, including the one withdrawn | F | 36 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
-| 1 | System architecture and the component 4.3a / 4.3b boundary | 3.1 | 8 |
-| 2 | Organiser analytics dashboard | E | 26 |
-| 3 | Trends and per-category redemption | E | 27 |
-| 4 | Automatic capacity alerts on a device | E | 28 |
-| 5 | Organiser broadcast delivered end to end | E | 29 |
-| 6 | Attendee pass with a server-issued token | E | 30 |
-| 7 | Meal categories and the per-device redemption trail | E | 31 |
-| 8 | Scanner accepting a voucher | E | 32 |
-| 9 | The same voucher refused on a second attempt | E | 33 |
-| 10 | Report exports available to an organiser | E | 34 |
+| 1 | System architecture and the component 4.3a / 4.3b boundary | 3.1 | 9 |
+| 2 | Organiser analytics dashboard | E | 27 |
+| 3 | Trends and per-category redemption | E | 28 |
+| 4 | Automatic capacity alerts on a device | E | 29 |
+| 5 | Organiser broadcast delivered end to end | E | 30 |
+| 6 | Attendee pass with a server-issued token | E | 31 |
+| 7 | Meal categories and the per-device redemption trail | E | 32 |
+| 8 | Scanner accepting a voucher | E | 33 |
+| 9 | The same voucher refused on a second attempt | E | 34 |
+| 10 | Report exports available to an organiser | E | 35 |
 
 
 ## Abstract
@@ -187,10 +187,10 @@ Quick Response (QR) codes provide a mature, standardised mechanism for
 machine-readable identification [1], and QR-based attendance has been
 proposed as a way to reclaim the lecture time that manual registers consume
 [3]. Cloud push-messaging services such as Firebase Cloud
-Messaging exist to send messages to mobile devices reliably [6], within the
+Messaging exist to send messages to mobile devices reliably [9], within the
 delivery guarantees Section 2 sets out, and modern cross-platform toolkits such as
 Flutter allow a single codebase to deliver the required scanning, charting
-and notification functionality [16]. This project applies these
+and notification functionality [19]. This project applies these
 technologies to conference operations as component 4.3b of the
 ConferenceCheck capstone programme. A sibling component, 4.3a, handles the
 core attendee check-in capture and offline synchronisation engine
@@ -231,11 +231,11 @@ attendee communication.
    that enforces single-use redemption across multiple meal categories.
 3. To implement session attendance tracking with capacity management and
    overcrowding alerts.
-4. To build a push notification system for attendee communications and
+7. To build a push notification system for attendee communications and
    schedule updates, with per-recipient delivery records.
-5. To implement reporting and data export (CSV) functionality for event
+8. To implement reporting and data export (CSV) functionality for event
    organisers.
-6. To produce comprehensive technical documentation and a
+9. To produce comprehensive technical documentation and a
    publication-ready paper.
 
 ### 1.4 Scope
@@ -307,7 +307,38 @@ motivates the server-side single-use redemption design evaluated in this
 report, in which the database, not the scanning client, is the arbiter of
 whether a voucher has already been consumed.
 
-For the redemption transaction itself, Helland [13] provides the canonical
+That weakness has not gone away in the decade since, and the recent literature
+answers it by constraining the scan rather than the entitlement. Mohammed and
+Zidan [4] regenerate the code twice a second, so that a code which has been
+photographed is already stale by the time it is presented again; they report
+improved accuracy and a positive reception from students and instructors,
+drawn from surveys and record analysis rather than from a controlled
+comparison. Nwabuwe et al. [5], writing in the same journal as Masalha and
+Hirzallah nine years later, still describe a shared code as the central
+vulnerability, and bind the scan to a place and a device: the venue's
+polygonal coordinates are encoded in the code itself and checked by geofence,
+and the registering handset's IMEI is verified so that one person cannot
+register for another. Alsuhibany [6] secures the symbol instead of the scan,
+embedding a watermark so that a substituted or tampered code can be detected,
+and reports high accuracy over a dataset of 5,000 samples.
+
+Each of these binds the act of scanning more tightly, to the moment, the
+place, the device or the integrity of the symbol, and each is a reasonable
+answer to the problem it takes on. None of them makes the thing being claimed
+single-use, which is a different guarantee and the one this project pursues.
+The distinction is in what is being recorded: an attendance mark may
+legitimately be registered once per person per session, and the fraud is
+someone registering who is not there, whereas a meal entitlement is consumed,
+and the fraud is the same person consuming it twice. Binding a scan to a place
+or a handset does not prevent the second of these, because the attendee is
+genuinely present and holding their own phone both times.
+
+It is also worth recording what this body of work does not contain. None of
+[4], [5] or [6] reports a measured comparison against a manual process, and
+neither does [3]. Section 6.8 therefore has no external figure to set its own
+against, and says so rather than implying that one exists.
+
+For the redemption transaction itself, Helland [16] provides the canonical
 treatment of idempotence in distributed systems: operations that may be
 retried, as scans on unreliable venue networks will be, must be designed so
 that repeated submission cannot produce repeated effect. In this project,
@@ -318,10 +349,10 @@ application-level race condition, and it is the same property that makes
 the offline scan queue described in Section 3.5 safe to replay without
 reconciliation logic.
 
-On the presentation side, Few [4] establishes design principles for
+On the presentation side, Few [7] establishes design principles for
 operational dashboards: a dashboard must fit on a single screen, prioritise
 the small number of measures that drive action, and use visual encoding
-rather than tables of numbers for trend perception. Nielsen [5] provides the
+rather than tables of numbers for trend perception. Nielsen [8] provides the
 response-time thresholds that inform this project's latency targets:
 feedback within one second preserves a user's flow of thought, which sets
 the budget for scan-validation round trips at a catering service point where
@@ -330,22 +361,22 @@ reports the measured results.
 
 For attendee communication, Firebase Cloud Messaging documentation describes
 an architecture in which each app instance registers for messages and is
-identified by its own registration token [7], and states that a message
+identified by its own registration token [10], and states that a message
 accepted by FCM has not thereby been delivered: a message for an offline
 device is stored and delivered when the device reconnects, and delivery may be
-delayed or may not happen at all [8]. Delivery is therefore best-effort rather
+delayed or may not happen at all [11]. Delivery is therefore best-effort rather
 than guaranteed, tokens expire, and devices
 without Google Play services are unreachable, all of which motivate the
 dual-channel design evaluated in Section 6.7, in which every notification is
 also persisted to an in-app inbox with per-recipient delivery records. The
 service interface between the mobile client and backend follows the REST
-architectural style [9]; endpoint authentication uses bearer tokens as
-specified in RFC 6750 [10] and implemented by Laravel Sanctum [11], with
+architectural style [12]; endpoint authentication uses bearer tokens as
+specified in RFC 6750 [13] and implemented by Laravel Sanctum [14], with
 mobile-specific hardening guided by the OWASP Mobile Application Security
-Verification Standard [12]. The client architecture applies the separation
+Verification Standard [15]. The client architecture applies the separation
 of presentation, state and data access descended from the Model-View-
-Controller pattern [14], realised in Flutter's widget and provider model
-[16].
+Controller pattern [17], realised in Flutter's widget and provider model
+[19].
 
 Taken together, this body of work indicates that the individual technologies
 are mature, but that existing systems apply them piecemeal: attendance tools
@@ -360,7 +391,7 @@ rather than to convention.
 ### 3.1 System architecture and the component 4.3a / 4.3b boundary
 
 The system is a client-server architecture with three tiers: a Flutter
-mobile application, the CMS v4 Laravel backend exposing a REST API [9], and
+mobile application, the CMS v4 Laravel backend exposing a REST API [12], and
 a PostgreSQL database, with Firebase Cloud Messaging as the external push
 channel.
 
@@ -374,14 +405,14 @@ channel.
 | Push dispatch: Laravel → Firebase Cloud Messaging (external) then to the device, for component 4.3b notifications only | |
 
 The mobile application follows a layered structure derived from the
-Model-View-Controller separation [14]: a presentation layer of Flutter
+Model-View-Controller separation [17]: a presentation layer of Flutter
 widgets, a state layer of Riverpod providers holding screen state and
 orchestrating asynchronous calls, and a data layer of repository classes
 wrapping a single authenticated REST client. Platform services, camera
 access via `mobile_scanner` and push token registration via
 `firebase_messaging`, are isolated behind interfaces so that they can be
 stubbed in widget tests. The backend extends the CMS v4 Laravel application.
-Every endpoint requires a Sanctum-issued bearer token [10, 11] and returns a
+Every endpoint requires a Sanctum-issued bearer token [13, 14] and returns a
 uniform JSON envelope with `success`, `message` and `data` fields.
 Authorisation is role-based: organiser accounts manage events and view
 analytics, scanner accounts may only submit scan validations, and attendee
@@ -419,7 +450,7 @@ database transaction, the server locks the voucher row
 on the voucher identifier guarantees that if two scanners submit the same
 token concurrently, exactly one insert succeeds and the other receives a
 definitive "already redeemed" response naming the earlier redemption time
-[13]. The redemption record, including the redeeming device identifier and
+[16]. The redemption record, including the redeeming device identifier and
 timestamp, is immutable thereafter, providing a complete audit trail for
 post-event reconciliation. This design places the single-use guarantee in
 the database's constraint machinery rather than in application-level
@@ -456,7 +487,7 @@ already-redeemed, duplicate or invalid, settles it.
 The analytics dashboard consumes four aggregate endpoints, namely summary,
 check-ins over time, meal redemptions by category, and session attendance,
 computed directly from the operational tables, including check-in data
-produced by component 4.3a. Following Few's single-screen principle [4], the
+produced by component 4.3a. Following Few's single-screen principle [7], the
 landing view presents total registrations, check-in count and rate, and
 voucher redemption progress as headline figures, with time-series charts
 beneath. The client self-refreshes on a 30-second polling interval, a
@@ -468,8 +499,8 @@ in Section 6.5.
 Organisers compose notifications targeted at all attendees or at
 role-scoped groups. The dispatch service resolves the target set into
 per-recipient delivery records, then delivers via Firebase Cloud Messaging
-to every registered device token [7]. Because FCM delivery is best-effort
-[8], every notification is simultaneously persisted and served through an
+to every registered device token [10]. Because FCM delivery is best-effort
+[11], every notification is simultaneously persisted and served through an
 authenticated in-app inbox, so an attendee whose device was offline, or
 lacks Google Play services, still receives the message on next application
 open; the per-recipient records make delivery auditable.
@@ -494,11 +525,11 @@ Cloud Messaging, Git for version control.
 
 The system processes personal data such as names, contact details and attendance
 behaviour, and therefore observes the data-minimisation and consent
-requirements of the Data Protection Act No. 3 of 2021 of Zambia [15].
+requirements of the Data Protection Act No. 3 of 2021 of Zambia [18].
 Attendee records hold only fields required for event operations, QR tokens
 are opaque and carry no personal data, client-server traffic is encrypted in
 transit, API access is authenticated and role-scoped following OWASP MASVS
-guidance [12], and evaluation is performed exclusively on synthetically
+guidance [15], and evaluation is performed exclusively on synthetically
 seeded data, so no real attendee data was processed during development or
 evaluation. The use of artificial intelligence tools during development is
 disclosed in full in **Appendix A**, within the scope limits set out in
@@ -710,7 +741,7 @@ Section 4.2.
 | Analytics summary | 20 | 214.5 ms | 211.6 ms | 282.6 ms | 292.4 ms | feeds the freshness bound in 6.5 |
 
 Every measured latency clears its target with substantial margin against
-Nielsen's response-time threshold [5]. These figures are taken on a single
+Nielsen's response-time threshold [8]. These figures are taken on a single
 local machine over loopback HTTP, not on venue-grade Wi-Fi as the proposal's
 target scenario assumes; Section 8 states what follows, and does not follow,
 from that difference.
@@ -749,7 +780,7 @@ behaviour for an invalid token and not a defect. Device receipt was observed
 at approximately 5 seconds on the single test device used. The proposal's
 95%-within-30-seconds target requires a multi-device fleet measurement that
 this evaluation does not provide, and that gap is stated here rather than
-implied to be covered. Because delivery is best-effort by design [8], the
+implied to be covered. Because delivery is best-effort by design [11], the
 in-app inbox gives 100% eventual delivery to any attendee who opens the
 application, independent of push reachability, which is the property the
 dual-channel design in Section 3.6 exists to guarantee.
@@ -871,7 +902,7 @@ claim that this evaluation cannot support with a sample of one device, and
 is recorded here as future work rather than as met.
 
 **iOS is unverified.** Development and testing targeted Android; iOS
-compatibility is expected from Flutter's cross-platform model [16] but was
+compatibility is expected from Flutter's cross-platform model [19] but was
 not systematically verified within this project.
 
 ## 9. Conclusion
@@ -913,36 +944,45 @@ was unable to complete.
 3. F. Masalha and N. Hirzallah, "A students attendance system using QR
    code," *International Journal of Advanced Computer Science and
    Applications*, vol. 5, no. 3, pp. 75-79, 2014.
-4. S. Few, *Information Dashboard Design: The Effective Visual
+4. M. Mohammed and K. Zidan, "Enhancing attendance tracking using animated
+   QR codes: a case study," *Indonesian Journal of Electrical Engineering and
+   Computer Science*, vol. 31, no. 3, pp. 1716-1723, 2023.
+5. A. Nwabuwe, B. Sanghera, T. Alade and F. Olajide, "Fraud mitigation in
+   attendance monitoring systems using dynamic QR code, geofencing and IMEI
+   technologies," *International Journal of Advanced Computer Science and
+   Applications*, vol. 14, no. 4, pp. 938-945, 2023.
+6. S. Alsuhibany, "Innovative QR code system for tamper-proof generation and
+   fraud-resistant verification," *Sensors*, vol. 25, no. 13, art. 3855, 2025.
+7. S. Few, *Information Dashboard Design: The Effective Visual
    Communication of Data*. Sebastopol, CA, USA: O'Reilly Media, 2006.
-5. J. Nielsen, *Usability Engineering*. San Francisco, CA, USA: Morgan
+8. J. Nielsen, *Usability Engineering*. San Francisco, CA, USA: Morgan
    Kaufmann, 1993.
-6. Google, "Firebase Cloud Messaging," *Firebase Documentation*, 2025.
+9. Google, "Firebase Cloud Messaging," *Firebase Documentation*, 2025.
    [Online]. Available: https://firebase.google.com/docs/cloud-messaging
-7. Google, "FCM architectural overview," *Firebase Documentation*, 2025.
+10. Google, "FCM architectural overview," *Firebase Documentation*, 2025.
    [Online]. Available:
    https://firebase.google.com/docs/cloud-messaging/fcm-architecture
-8. Google, "Understanding message delivery," *Firebase Documentation*, 2025.
+11. Google, "Understanding message delivery," *Firebase Documentation*, 2025.
    [Online]. Available:
    https://firebase.google.com/docs/cloud-messaging/understand-delivery
-9. R. T. Fielding, "Architectural styles and the design of network-based
+12. R. T. Fielding, "Architectural styles and the design of network-based
    software architectures," Ph.D. dissertation, Univ. of California,
    Irvine, CA, USA, 2000.
-10. M. Jones and D. Hardt, "The OAuth 2.0 Authorization Framework: Bearer
+13. M. Jones and D. Hardt, "The OAuth 2.0 Authorization Framework: Bearer
    Token Usage," IETF RFC 6750, Oct. 2012.
-11. Laravel, "Laravel Sanctum," *Laravel Documentation*, 2025. [Online].
+14. Laravel, "Laravel Sanctum," *Laravel Documentation*, 2025. [Online].
    Available: https://laravel.com/docs/sanctum
-12. OWASP Foundation, *OWASP Mobile Application Security Verification
+15. OWASP Foundation, *OWASP Mobile Application Security Verification
     Standard (MASVS)*, v2.0, 2023. [Online]. Available: https://mas.owasp.org
-13. P. Helland, "Idempotence is not a medical condition," *Communications
+16. P. Helland, "Idempotence is not a medical condition," *Communications
     of the ACM*, vol. 55, no. 5, pp. 56-65, 2012.
-14. G. E. Krasner and S. T. Pope, "A cookbook for using the
+17. G. E. Krasner and S. T. Pope, "A cookbook for using the
     Model-View-Controller user interface paradigm in Smalltalk-80,"
     *Journal of Object-Oriented Programming*, vol. 1, no. 3, pp. 26-49,
     1988.
-15. Republic of Zambia, *Data Protection Act No. 3 of 2021*. Lusaka:
+18. Republic of Zambia, *Data Protection Act No. 3 of 2021*. Lusaka:
     Government Printer, 2021.
-16. Google, "Flutter documentation," 2025. [Online]. Available:
+19. Google, "Flutter documentation," 2025. [Online]. Available:
     https://docs.flutter.dev
 
 Fourteen of the fifteen sources in the approved proposal are cited above. The
@@ -1189,7 +1229,7 @@ Check-in progress as both a count and a percentage, 19 of 30 at 63%, with meal
 vouchers issued and redeemed, redemption rate, session attendance, the count of
 sessions over capacity and the count of notifications sent. This is the
 single-screen view Section 3.6 describes, following Few's principle that a
-dashboard prioritises the small number of measures that drive action [4].
+dashboard prioritises the small number of measures that drive action [7].
 
 **Figure 3. Trends and per-category redemption (Objectives 1 and 2).**
 
@@ -1290,23 +1330,28 @@ not evidence of anything, and because one entry did not survive it.
 | [1] ISO/IEC 18004:2015 | Correct; title and year match the ISO record exactly | Cited for the symbology and its error-correction levels, which the standard specifies. A 2024 edition now exists; the 2015 edition is the one consulted |
 | [2] Tiwari, ICIT 2016, pp. 39-44 | Correct; venue, year and pages match | Cited for QR capacity, omnidirectional scanning and decode robustness, all of which the paper covers |
 | [3] Masalha and Hirzallah, IJACSA 5(3), pp. 75-79, 2014 | Correct; volume, issue, pages and year all match | **Overstated, and corrected.** The report previously said this work "evaluated" a system and "found substantial reductions" in processing time and recording error, and that it "measured processing time and recording accuracy... against a real manual register". The full text contains no experiment, no measurement and no manual-register comparison; it is a design proposal with an analysis section. Four passages were rewritten. What the source does support, and is still cited for, is the photographed-code weakness, which its analysis states directly |
-| [4] Few, O'Reilly Media, 2006 | Correct; first edition, publisher and year match | Cited for the single-screen dashboard principle, which the book argues |
-| [5] Nielsen, Morgan Kaufmann, 1993 | Correct as a real 1993 edition. The original hardcover was Academic Press; Morgan Kaufmann published the 1993 paperback, which is the form cited | Cited for the response-time thresholds, which the book sets out |
-| [6] Firebase Cloud Messaging documentation, landing page | Live and official | **Narrowed.** The page describes FCM as a solution that "lets you reliably send messages"; it does not mention latency or cost. Section 1 had cited it for "reliable, low-latency delivery... at no marginal cost", so the latency and cost claims were dropped. What remains is what the page states |
-| [7] Google, "FCM architectural overview" | Live and official | **Added** so that the registration-token claim cites the page that makes it: "An instance of a client app registers to receive messages, obtaining a registration token that uniquely identifies the app instance" |
-| [8] Google, "Understanding message delivery" | Live and official | **Added** so that the best-effort claim cites the page that makes it. The page states that a message ID returned to the sender means the message "was accepted for delivery", not delivered, that a message for an offline device is stored until the device reconnects, and that delivery may be delayed |
-| [9] Fielding, PhD dissertation, UC Irvine, 2000 | Correct; institution and year match | Cited for the REST architectural style, which the dissertation introduces |
-| [10] RFC 6750, Jones and Hardt, Oct. 2012 | Correct; authors, number, title and date match the RFC Editor record | Cited for bearer-token usage, which is the RFC's subject |
-| [11] Laravel Sanctum documentation | Live and official | Cited for token authentication, which it documents |
-| [12] OWASP MASVS v2.0, 2023 | Correct; v2.0.0 was released in April 2023 | Cited for mobile hardening guidance, which it provides |
-| [13] Helland, *CACM* 55(5), pp. 56-65, 2012 | Correct; volume, issue, pages and year all match | Cited for idempotence under retry, which is the article's argument |
-| [14] Krasner and Pope, *JOOP* 1(3), pp. 26-49, 1988 | Correct; volume, issue, pages and year all match | Cited for the Model-View-Controller separation, which the paper describes |
-| [15] Data Protection Act No. 3 of 2021, Zambia | Correct; the Act exists under that number and year | Cited for data-minimisation and consent obligations, which it imposes |
-| [16] Flutter documentation | Live and official | Cited for cross-platform delivery from one codebase |
+| [4] Mohammed and Zidan, *IJEECS* 31(3), pp. 1716-1723, 2023 | Verified in the Crossref record for DOI 10.11591/ijeecs.v31.i3.pp1716-1723; authors, venue, volume, issue and year all match | Cited for regenerating the code twice a second so a photographed code is stale on re-presentation. The abstract states the method and reports improved accuracy and a positive reception from surveys and record analysis; it gives no figures, and none are attributed to it here |
+| [5] Nwabuwe, Sanghera, Alade and Olajide, *IJACSA* 14(4), pp. 938-945, 2023 | Verified in Crossref and against the article PDF, whose running head and page numbers confirm the volume, issue and range | Cited for geofencing by encoding the venue polygon in the code, and for IMEI verification against proxy registration. Both appear in the abstract, and the full text states plainly that a generated code "can be easily shared amongst colleagues". Its evaluation is reported qualitatively, so no measured result is attributed to it |
+| [6] Alsuhibany, *Sensors* 25(13), art. 3855, 2025 | Verified in the Crossref record for DOI 10.3390/s25133855 | Cited for watermarking a QR symbol so tampering can be detected, evaluated on 5,000 samples. The abstract reports high accuracy without a single headline figure, and none is invented here |
+| [7] Few, O'Reilly Media, 2006 | Correct; first edition, publisher and year match | Cited for the single-screen dashboard principle, which the book argues |
+| [8] Nielsen, Morgan Kaufmann, 1993 | Correct as a real 1993 edition. The original hardcover was Academic Press; Morgan Kaufmann published the 1993 paperback, which is the form cited | Cited for the response-time thresholds, which the book sets out |
+| [9] Firebase Cloud Messaging documentation, landing page | Live and official | **Narrowed.** The page describes FCM as a solution that "lets you reliably send messages"; it does not mention latency or cost. Section 1 had cited it for "reliable, low-latency delivery... at no marginal cost", so the latency and cost claims were dropped. What remains is what the page states |
+| [10] Google, "FCM architectural overview" | Live and official | **Added** so that the registration-token claim cites the page that makes it: "An instance of a client app registers to receive messages, obtaining a registration token that uniquely identifies the app instance" |
+| [11] Google, "Understanding message delivery" | Live and official | **Added** so that the best-effort claim cites the page that makes it. The page states that a message ID returned to the sender means the message "was accepted for delivery", not delivered, that a message for an offline device is stored until the device reconnects, and that delivery may be delayed |
+| [12] Fielding, PhD dissertation, UC Irvine, 2000 | Correct; institution and year match | Cited for the REST architectural style, which the dissertation introduces |
+| [13] RFC 6750, Jones and Hardt, Oct. 2012 | Correct; authors, number, title and date match the RFC Editor record | Cited for bearer-token usage, which is the RFC's subject |
+| [14] Laravel Sanctum documentation | Live and official | Cited for token authentication, which it documents |
+| [15] OWASP MASVS v2.0, 2023 | Correct; v2.0.0 was released in April 2023 | Cited for mobile hardening guidance, which it provides |
+| [16] Helland, *CACM* 55(5), pp. 56-65, 2012 | Correct; volume, issue, pages and year all match | Cited for idempotence under retry, which is the article's argument |
+| [17] Krasner and Pope, *JOOP* 1(3), pp. 26-49, 1988 | Correct; volume, issue, pages and year all match | Cited for the Model-View-Controller separation, which the paper describes |
+| [18] Data Protection Act No. 3 of 2021, Zambia | Correct; the Act exists under that number and year | Cited for data-minimisation and consent obligations, which it imposes |
+| [19] Flutter documentation | Live and official | Cited for cross-platform delivery from one codebase |
 | Schwaber and Sutherland, *The Scrum Guide*, 2020 | The document exists as cited | **Withdrawn.** Not cited anywhere in this report, and Scrum is not discussed in it. Removed from the list rather than left as an entry nothing refers to |
 
-One outstanding item follows from this check and is stated rather than quietly
-left: the related-work base still needs the recent event-technology literature
-that Section 2 does not yet cover. The Firebase citation, which this check
-first recorded as pointing at the documentation root rather than at the pages
-carrying the claims, has since been split into [6], [7] and [8] above.
+Both items this check first recorded as outstanding have since been closed.
+The Firebase citation, which pointed at the documentation root rather than at
+the pages carrying the claims, was split into [9], [10] and [11]. The recent
+event-technology literature Section 2 lacked has been added as [4], [5] and
+[6]: each was located through Crossref, verified against its own record, and
+read before being cited, and what each is cited for is recorded above
+alongside what it does not support.
