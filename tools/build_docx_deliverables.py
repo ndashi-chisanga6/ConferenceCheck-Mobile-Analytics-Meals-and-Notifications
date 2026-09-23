@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from docx import Document
-from docx.shared import Pt, Twips
+from docx.shared import Inches, Pt, Twips
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn as _qn
 from docx.oxml import OxmlElement
@@ -34,6 +34,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CAPTION_PATTERN = re.compile(r"^(Table|Figure) [A-D]?\d+\.")
 
 AUTHOR = "Ndashi Bwalya Chisanga"
+
+# Tall phone screenshots are capped at this height so a figure and its caption
+# stay on one page. Large enough that the on-screen text a figure exists to show
+# is still readable in print, which at 4 inches it was not.
+MAX_FIGURE_HEIGHT = Inches(6.5)
 
 # A heading no longer than this is given room to sit on a single line; a value
 # no longer than this is never allowed to break across lines.
@@ -95,6 +100,10 @@ def render(deliverable: Deliverable, workdir: Path) -> Path:
             # The document's own title line becomes the Word title, so the
             # numbered sections written as `##` render as Heading 1.
             "--shift-heading-level-by=-1",
+            # Figures are written relative to the markdown file so they resolve
+            # on GitHub; pandoc runs from the repository root, so it needs the
+            # source's own directory on the resource path to find them.
+            f"--resource-path={deliverable.source_path.parent}",
             f"--output={rendered}",
         ],
         check=True,
@@ -173,6 +182,28 @@ def rule_tables(path: Path) -> None:
         cell_properties.insert(0, cell_borders)
 
     document.save(str(path))
+
+
+def fit_images(path: Path) -> int:
+    """Cap figure height so a screenshot does not consume a whole page.
+
+    A phone screenshot is far taller than it is wide, and pandoc sizes an image
+    to the column width, which for a 1080x2400 capture would run well past the
+    bottom of the page. Each image is scaled to a maximum height instead, with
+    its aspect ratio preserved, so the figure sits with its caption.
+    """
+    document = Document(str(path))
+    changed = 0
+    for shape in document.inline_shapes:
+        if shape.height <= MAX_FIGURE_HEIGHT:
+            continue
+        ratio = shape.width / shape.height
+        shape.height = MAX_FIGURE_HEIGHT
+        shape.width = int(MAX_FIGURE_HEIGHT * ratio)
+        changed += 1
+    if changed:
+        document.save(str(path))
+    return changed
 
 
 def repeat_header_rows(path: Path) -> int:
@@ -356,12 +387,14 @@ def build(deliverable: Deliverable) -> None:
     rule_tables(deliverable.target_path)
     fitted = fit_tables(deliverable.target_path)
     headers = repeat_header_rows(deliverable.target_path)
+    figures = fit_images(deliverable.target_path)
     captions = align_captions(deliverable.target_path)
     add_page_numbers(deliverable.target_path)
     set_properties(deliverable.target_path, deliverable.title)
     size = deliverable.target_path.stat().st_size
     print(f"wrote {deliverable.target} ({size:,} bytes, {fitted} table(s) fitted, "
-          f"{headers} header row(s) set to repeat, {captions} caption(s) aligned)")
+          f"{headers} header row(s) set to repeat, {figures} figure(s) fitted, "
+          f"{captions} caption(s) aligned)")
 
 
 def main() -> int:
