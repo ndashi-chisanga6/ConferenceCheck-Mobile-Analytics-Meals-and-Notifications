@@ -420,6 +420,37 @@ class ConferenceApiTest extends TestCase
         $this->getJson("/api/events/{$this->event->id}/meal-vouchers/{$theirs->id}")->assertOk();
     }
 
+    public function test_notifications_are_only_readable_by_their_recipients(): void
+    {
+        config(['services.firebase.demo_mode' => true]);
+        Sanctum::actingAs($this->organiser);
+        $forOrganisers = $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Staff only',
+            'message' => 'Catering is short on the vegetarian option.',
+            'target_type' => 'organisers',
+        ])->assertOk()->json('data.notification.id');
+        $forAttendees = $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Lunch',
+            'message' => 'Lunch starts in 10 minutes.',
+            'target_type' => 'all_attendees',
+        ])->assertOk()->json('data.notification.id');
+
+        Sanctum::actingAs(User::query()->where('email', 'attendee@example.com')->firstOrFail());
+        $ids = collect($this->getJson("/api/events/{$this->event->id}/notifications")->assertOk()->json('data'))->pluck('id');
+        $this->assertContains($forAttendees, $ids);
+        $this->assertNotContains($forOrganisers, $ids);
+
+        $this->getJson("/api/events/{$this->event->id}/notifications/{$forOrganisers}")
+            ->assertForbidden()
+            ->assertJsonMissing(['message' => 'Catering is short on the vegetarian option.']);
+        $this->getJson("/api/events/{$this->event->id}/notifications/{$forAttendees}")
+            ->assertOk()
+            ->assertJsonMissingPath('data.recipients');
+
+        Sanctum::actingAs($this->scanner);
+        $this->getJson("/api/events/{$this->event->id}/notifications/{$forOrganisers}")->assertForbidden();
+    }
+
     public function test_scanner_cannot_download_reports(): void
     {
         Sanctum::actingAs($this->scanner);

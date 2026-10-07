@@ -36,9 +36,16 @@ class NotificationController extends ApiController
         return $this->ok('Device token deleted.');
     }
 
-    public function index(Event $event): JsonResponse
+    public function index(Request $request, Event $event): JsonResponse
     {
-        return $this->ok('Notifications retrieved.', EventNotification::query()->where('event_id', $event->id)->withCount('recipients')->latest()->get());
+        $notifications = EventNotification::query()
+            ->where('event_id', $event->id)
+            ->when($event->roleFor($request->user()) !== 'organiser', fn ($query) => $query->whereHas('recipients', fn ($recipients) => $recipients->where('user_id', $request->user()->id)))
+            ->withCount('recipients')
+            ->latest()
+            ->get();
+
+        return $this->ok('Notifications retrieved.', $notifications);
     }
 
     public function send(NotificationSendRequest $request, Event $event, FirebaseNotificationService $firebase, NotificationDispatchService $dispatch): JsonResponse
@@ -57,8 +64,20 @@ class NotificationController extends ApiController
         });
     }
 
-    public function show(Event $event, EventNotification $notification): JsonResponse
+    public function show(Request $request, Event $event, EventNotification $notification): JsonResponse
     {
-        return $notification->event_id === $event->id ? $this->ok('Notification retrieved.', $notification->load('recipients')) : $this->fail('Notification not found for this event.', null, 404);
+        if ($notification->event_id !== $event->id) {
+            return $this->fail('Notification not found for this event.', null, 404);
+        }
+
+        if ($event->roleFor($request->user()) === 'organiser') {
+            return $this->ok('Notification retrieved.', $notification->load('recipients'));
+        }
+
+        if (! $notification->recipients()->where('user_id', $request->user()->id)->exists()) {
+            return $this->fail('This notification was not sent to you.', null, 403);
+        }
+
+        return $this->ok('Notification retrieved.', $notification);
     }
 }
