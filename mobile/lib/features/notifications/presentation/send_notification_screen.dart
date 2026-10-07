@@ -60,7 +60,6 @@ class _SendNotificationScreenState
               ),
               DropdownMenuItem(value: 'organisers', child: Text('Organisers')),
               DropdownMenuItem(value: 'scanners', child: Text('Scanners')),
-              DropdownMenuItem(value: 'custom', child: Text('Custom')),
             ],
             onChanged: (value) =>
                 setState(() => _targetType = value ?? 'all_attendees'),

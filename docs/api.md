@@ -147,7 +147,7 @@ Send body:
 }
 ```
 
-Supported `target_type` values: `all_attendees`, `session_attendees` (requires `target_session_id`), `organisers`, `scanners`, `custom`.
+Supported `target_type` values: `all_attendees`, `session_attendees` (requires `target_session_id`), `organisers`, `scanners`.
 
 ## Reports
 

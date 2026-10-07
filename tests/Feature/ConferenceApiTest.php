@@ -180,6 +180,19 @@ class ConferenceApiTest extends TestCase
             ->assertJsonPath('data.firebase.demo', true);
     }
 
+    public function test_custom_target_is_rejected_instead_of_sent_to_everyone(): void
+    {
+        config(['services.firebase.demo_mode' => true]);
+        Sanctum::actingAs($this->organiser);
+
+        $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Just for a few people',
+            'message' => 'Meet at the registration desk.',
+            'target_type' => 'custom',
+        ])->assertUnprocessable()->assertJsonValidationErrors('target_type');
+        $this->assertDatabaseMissing('notifications', ['title' => 'Just for a few people']);
+    }
+
     public function test_csv_report_endpoint_returns_downloadable_csv(): void
     {
         Sanctum::actingAs($this->organiser);

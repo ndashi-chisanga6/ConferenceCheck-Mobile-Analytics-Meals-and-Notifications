@@ -102,9 +102,10 @@ class NotificationDispatchService
             'organisers', 'scanners' => $event->users()->wherePivot('role', rtrim($targetType, 's'))->get()
                 ->map(fn ($user) => ['user_id' => $user->id, 'attendee_id' => null])
                 ->all(),
-            default => $event->attendees()->get()
+            'all_attendees' => $event->attendees()->get()
                 ->map(fn ($attendee) => ['user_id' => $attendee->user_id, 'attendee_id' => $attendee->id])
                 ->all(),
+            default => [],
         };
     }
 }

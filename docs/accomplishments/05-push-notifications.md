@@ -4,7 +4,7 @@
 
 ## What was built
 
-- `POST /api/events/{event}/notifications/send` with target types `all_attendees`, `session_attendees`, `organisers`, `scanners`, `custom`; recipient resolution and per-recipient delivery records run in a `DB::transaction`.
+- `POST /api/events/{event}/notifications/send` with target types `all_attendees`, `session_attendees`, `organisers`, `scanners`; recipient resolution and per-recipient delivery records run in a `DB::transaction`.
 - Notification list and details endpoints for the in-app notification feed.
 - Device token registration (`POST /api/device-tokens`) so the backend knows each mobile device's FCM token.
 - Mobile: notifications feed, send screen (organiser), details screen, and [FirebaseMessagingService](../../mobile/lib/features/notifications/application/firebase_messaging_service.dart) that requests permission, obtains the FCM token and registers it with the backend — failing safely when Firebase config is absent.
