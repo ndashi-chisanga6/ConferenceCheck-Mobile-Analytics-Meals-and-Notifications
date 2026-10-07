@@ -30,9 +30,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('device-tokens/{deviceToken}', [NotificationController::class, 'deleteDeviceToken']);
 
     Route::prefix('events/{event}')->middleware('event.role:organiser,scanner,attendee')->group(function (): void {
-        Route::get('attendees', [AttendeeController::class, 'index']);
+        Route::get('attendees', [AttendeeController::class, 'index'])->middleware('event.role:organiser,scanner');
         Route::get('attendees/me', [AttendeeController::class, 'me']);
-        Route::get('attendees/{attendee}', [AttendeeController::class, 'show']);
+        Route::get('attendees/{attendee}', [AttendeeController::class, 'show'])->middleware('event.role:organiser,scanner');
         Route::post('attendees/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->middleware('event.role:organiser,scanner');
         Route::post('attendees/check-in/scan', [AttendeeController::class, 'scan'])->middleware('event.role:organiser,scanner');
 
@@ -43,23 +43,18 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('meal-categories', [MealController::class, 'categories']);
         Route::get('meal-categories/{mealCategory}', [MealController::class, 'showCategory']);
-        Route::get('meal-vouchers', [MealController::class, 'vouchers']);
+        Route::get('meal-vouchers', [MealController::class, 'vouchers'])->middleware('event.role:organiser,scanner');
         Route::get('meal-vouchers/{mealVoucher}', [MealController::class, 'showVoucher']);
         Route::post('meal-vouchers/scan', [MealController::class, 'scanVoucher'])->middleware('event.role:organiser,scanner');
-        Route::get('meal-redemptions', [MealController::class, 'redemptions']);
+        Route::get('meal-redemptions', [MealController::class, 'redemptions'])->middleware('event.role:organiser,scanner');
 
         Route::get('sessions', [SessionController::class, 'index']);
         Route::get('sessions/{session}', [SessionController::class, 'show']);
         Route::post('sessions/{session}/scan', [SessionController::class, 'scan'])->middleware('event.role:organiser,scanner');
-        Route::get('sessions/{session}/attendance', [SessionController::class, 'attendance']);
+        Route::get('sessions/{session}/attendance', [SessionController::class, 'attendance'])->middleware('event.role:organiser,scanner');
 
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::get('notifications/{notification}', [NotificationController::class, 'show']);
-
-        Route::get('reports/attendance.csv', [ReportController::class, 'attendance']);
-        Route::get('reports/meals.csv', [ReportController::class, 'meals']);
-        Route::get('reports/sessions.csv', [ReportController::class, 'sessions']);
-        Route::get('reports/notifications.csv', [ReportController::class, 'notifications']);
     });
 
     Route::prefix('events/{event}')->middleware('event.role:organiser')->group(function (): void {
@@ -78,5 +73,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('sessions/{session}', [SessionController::class, 'destroy']);
 
         Route::post('notifications/send', [NotificationController::class, 'send']);
+
+        Route::get('reports/attendance.csv', [ReportController::class, 'attendance']);
+        Route::get('reports/meals.csv', [ReportController::class, 'meals']);
+        Route::get('reports/sessions.csv', [ReportController::class, 'sessions']);
+        Route::get('reports/notifications.csv', [ReportController::class, 'notifications']);
     });
 });

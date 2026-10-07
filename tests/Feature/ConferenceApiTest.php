@@ -381,6 +381,34 @@ class ConferenceApiTest extends TestCase
             ->assertJsonPath('data.ticket_code', $attendee->ticket_code);
     }
 
+    public function test_attendee_cannot_read_staff_or_organiser_routes(): void
+    {
+        Sanctum::actingAs(User::query()->where('email', 'attendee@example.com')->firstOrFail());
+        $other = Attendee::query()->where('event_id', $this->event->id)->whereNull('user_id')->firstOrFail();
+        $session = ConferenceSession::query()->where('event_id', $this->event->id)->firstOrFail();
+
+        foreach ([
+            'attendees',
+            "attendees/{$other->id}",
+            'meal-vouchers',
+            'meal-redemptions',
+            "sessions/{$session->id}/attendance",
+            'reports/attendance.csv',
+            'reports/meals.csv',
+            'reports/sessions.csv',
+            'reports/notifications.csv',
+        ] as $path) {
+            $this->getJson("/api/events/{$this->event->id}/{$path}")->assertForbidden();
+        }
+    }
+
+    public function test_scanner_cannot_download_reports(): void
+    {
+        Sanctum::actingAs($this->scanner);
+
+        $this->getJson("/api/events/{$this->event->id}/reports/meals.csv")->assertForbidden();
+    }
+
     public function test_my_attendee_returns_404_when_no_record_is_linked(): void
     {
         Sanctum::actingAs($this->scanner);
