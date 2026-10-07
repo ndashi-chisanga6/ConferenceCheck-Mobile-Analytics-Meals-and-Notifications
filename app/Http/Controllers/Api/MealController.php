@@ -10,6 +10,7 @@ use App\Models\MealCategory;
 use App\Models\MealRedemption;
 use App\Models\MealVoucher;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -81,9 +82,17 @@ class MealController extends ApiController
         return $this->ok('Meal vouchers retrieved.', $event->mealVouchers()->with(['attendee', 'category'])->latest()->get());
     }
 
-    public function showVoucher(Event $event, MealVoucher $mealVoucher): JsonResponse
+    public function showVoucher(Request $request, Event $event, MealVoucher $mealVoucher): JsonResponse
     {
-        return $mealVoucher->event_id === $event->id ? $this->ok('Meal voucher retrieved.', $mealVoucher->load(['attendee', 'category'])) : $this->fail('Meal voucher not found for this event.', null, 404);
+        if ($mealVoucher->event_id !== $event->id) {
+            return $this->fail('Meal voucher not found for this event.', null, 404);
+        }
+
+        if ($event->roleFor($request->user()) === 'attendee' && $mealVoucher->attendee()->value('user_id') !== $request->user()->id) {
+            return $this->fail('You can only view your own meal vouchers.', null, 403);
+        }
+
+        return $this->ok('Meal voucher retrieved.', $mealVoucher->load(['attendee', 'category']));
     }
 
     public function scanVoucher(MealVoucherScanRequest $request, Event $event): JsonResponse

@@ -402,6 +402,24 @@ class ConferenceApiTest extends TestCase
         }
     }
 
+    public function test_attendee_can_only_open_their_own_voucher(): void
+    {
+        $user = User::query()->where('email', 'attendee@example.com')->firstOrFail();
+        $mine = MealVoucher::query()->whereHas('attendee', fn ($query) => $query->where('user_id', $user->id))->firstOrFail();
+        $theirs = MealVoucher::query()->where('event_id', $this->event->id)->whereHas('attendee', fn ($query) => $query->whereNull('user_id'))->firstOrFail();
+        Sanctum::actingAs($user);
+
+        $this->getJson("/api/events/{$this->event->id}/meal-vouchers/{$mine->id}")
+            ->assertOk()
+            ->assertJsonPath('data.qr_token', $mine->qr_token);
+        $this->getJson("/api/events/{$this->event->id}/meal-vouchers/{$theirs->id}")
+            ->assertForbidden()
+            ->assertJsonMissing(['qr_token' => $theirs->qr_token]);
+
+        Sanctum::actingAs($this->scanner);
+        $this->getJson("/api/events/{$this->event->id}/meal-vouchers/{$theirs->id}")->assertOk();
+    }
+
     public function test_scanner_cannot_download_reports(): void
     {
         Sanctum::actingAs($this->scanner);

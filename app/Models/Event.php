@@ -28,6 +28,17 @@ class Event extends Model
         return $this->belongsToMany(User::class, 'event_users')->withPivot('role')->withTimestamps();
     }
 
+    public function roleFor(User $user): ?string
+    {
+        if ($user->role === 'organiser' && $this->created_by === $user->id) {
+            return 'organiser';
+        }
+
+        $role = $this->users()->whereKey($user->id)->first()?->pivot?->getAttribute('role');
+
+        return is_string($role) ? $role : null;
+    }
+
     /** @return HasMany<Attendee, $this> */
     public function attendees(): HasMany
     {

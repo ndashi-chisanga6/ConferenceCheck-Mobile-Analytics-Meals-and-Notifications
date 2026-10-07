@@ -18,13 +18,7 @@ class EnsureEventRole
             return response()->json(['success' => false, 'message' => 'Unauthenticated or invalid event.', 'errors' => null], 401);
         }
 
-        if ($user->role === 'organiser' && $event->created_by === $user->id) {
-            return $next($request);
-        }
-
-        $assignedRole = $event->users()->whereKey($user->id)->first()?->pivot?->getAttribute('role');
-
-        if (is_string($assignedRole) && in_array($assignedRole, $roles, true)) {
+        if (in_array($event->roleFor($user), $roles, true)) {
             return $next($request);
         }
 
