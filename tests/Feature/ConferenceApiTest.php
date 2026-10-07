@@ -471,6 +471,20 @@ class ConferenceApiTest extends TestCase
         $this->getJson("/api/events/{$this->event->id}/notifications/{$forOrganisers}")->assertForbidden();
     }
 
+    public function test_only_the_owner_can_delete_a_device_token(): void
+    {
+        $attendee = User::query()->where('email', 'attendee@example.com')->firstOrFail();
+        $token = DeviceToken::query()->create(['user_id' => $attendee->id, 'token' => 'attendee-phone', 'platform' => 'android']);
+
+        Sanctum::actingAs($this->organiser);
+        $this->deleteJson("/api/device-tokens/{$token->id}")->assertForbidden();
+        $this->assertDatabaseHas('device_tokens', ['id' => $token->id]);
+
+        Sanctum::actingAs($attendee);
+        $this->deleteJson("/api/device-tokens/{$token->id}")->assertOk();
+        $this->assertDatabaseMissing('device_tokens', ['id' => $token->id]);
+    }
+
     public function test_scanner_cannot_download_reports(): void
     {
         Sanctum::actingAs($this->scanner);

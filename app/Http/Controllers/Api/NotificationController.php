@@ -27,7 +27,7 @@ class NotificationController extends ApiController
 
     public function deleteDeviceToken(Request $request, DeviceToken $deviceToken): JsonResponse
     {
-        if ($deviceToken->user_id !== $request->user()->id && $request->user()->role !== 'organiser') {
+        if ($deviceToken->user_id !== $request->user()->id) {
             return $this->fail('You cannot delete this device token.', null, 403);
         }
 
