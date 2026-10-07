@@ -43,6 +43,26 @@ class ConferenceApiTest extends TestCase
             ->assertJsonStructure(['data' => ['token', 'user' => ['id', 'email', 'role']]]);
     }
 
+    public function test_register_cannot_pick_organiser_role(): void
+    {
+        $token = $this->postJson('/api/auth/register', [
+            'name' => 'Self Promoted',
+            'email' => 'self@example.com',
+            'password' => 'password123',
+            'role' => 'organiser',
+        ])->assertCreated()
+            ->assertJsonPath('data.user.role', 'attendee')
+            ->json('data.token');
+
+        $this->withToken($token)->postJson('/api/events', [
+            'name' => 'Not allowed',
+            'venue' => 'Anywhere',
+            'status' => 'draft',
+            'starts_at' => now()->addDay()->toDateTimeString(),
+            'ends_at' => now()->addDays(2)->toDateTimeString(),
+        ])->assertForbidden();
+    }
+
     public function test_analytics_summary_endpoint(): void
     {
         Sanctum::actingAs($this->organiser);

@@ -13,7 +13,7 @@ class AuthController extends ApiController
 {
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = User::query()->create($request->validated());
+        $user = User::query()->create($request->validated() + ['role' => 'attendee']);
         $token = $user->createToken('mobile-api')->plainTextToken;
 
         return $this->ok('Registration successful.', ['user' => $user, 'token' => $token], 201);
