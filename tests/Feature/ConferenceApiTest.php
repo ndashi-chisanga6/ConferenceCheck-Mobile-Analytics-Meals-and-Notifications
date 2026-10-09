@@ -94,7 +94,29 @@ class ConferenceApiTest extends TestCase
         $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => $voucher->qr_token])->assertOk();
         $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => $voucher->qr_token])
             ->assertStatus(409)
-            ->assertJsonPath('success', false);
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('errors.status', 'redeemed')
+            ->assertJsonPath('errors.redeemed_at', fn ($redeemedAt) => $redeemedAt !== null);
+    }
+
+    public function test_constraint_rejection_returns_409_not_500(): void
+    {
+        Sanctum::actingAs($this->scanner);
+        $voucher = MealVoucher::query()->where('event_id', $this->event->id)->where('status', 'unused')->firstOrFail();
+        $earlier = MealRedemption::query()->create([
+            'event_id' => $voucher->event_id,
+            'meal_voucher_id' => $voucher->id,
+            'attendee_id' => $voucher->attendee_id,
+            'meal_category_id' => $voucher->meal_category_id,
+            'redeemed_by' => $this->scanner->id,
+            'redeemed_at' => now()->subMinute(),
+        ]);
+
+        $this->postJson("/api/events/{$this->event->id}/meal-vouchers/scan", ['qr_token' => $voucher->qr_token])
+            ->assertStatus(409)
+            ->assertJsonPath('errors.status', 'redeemed')
+            ->assertJsonPath('errors.redeemed_at', $earlier->redeemed_at?->toJSON());
+        $this->assertSame(1, MealRedemption::query()->where('meal_voucher_id', $voucher->id)->count());
     }
 
     public function test_invalid_meal_voucher_scan_rejected(): void

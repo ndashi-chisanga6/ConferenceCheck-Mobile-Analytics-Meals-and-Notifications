@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\MealCategory;
 use App\Models\MealRedemption;
 use App\Models\MealVoucher;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +101,20 @@ class MealController extends ApiController
 
     public function scanVoucher(MealVoucherScanRequest $request, Event $event): JsonResponse
     {
+        try {
+            return $this->redeem($request, $event);
+        } catch (UniqueConstraintViolationException) {
+            $voucherId = MealVoucher::query()->where('qr_token', $request->string('qr_token'))->value('id');
+
+            return $this->fail('Meal voucher has already been redeemed or is not usable.', [
+                'status' => 'redeemed',
+                'redeemed_at' => MealRedemption::query()->where('meal_voucher_id', $voucherId)->value('redeemed_at'),
+            ], 409);
+        }
+    }
+
+    private function redeem(MealVoucherScanRequest $request, Event $event): JsonResponse
+    {
         return DB::transaction(function () use ($request, $event) {
             $voucher = MealVoucher::query()->where('qr_token', $request->string('qr_token'))->lockForUpdate()->first();
 
@@ -111,7 +126,7 @@ class MealController extends ApiController
             $now = now();
 
             if ($voucher->status !== 'unused') {
-                return $this->fail('Meal voucher has already been redeemed or is not usable.', ['status' => $voucher->status], 409);
+                return $this->fail('Meal voucher has already been redeemed or is not usable.', ['status' => $voucher->status, 'redeemed_at' => $voucher->redeemed_at], 409);
             }
             if (! $category || $category->status !== 'active') {
                 return $this->fail('Meal category is not active.', null, 422);
