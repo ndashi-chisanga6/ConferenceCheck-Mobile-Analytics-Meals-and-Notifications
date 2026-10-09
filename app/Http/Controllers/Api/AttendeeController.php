@@ -36,8 +36,8 @@ class AttendeeController extends ApiController
             'qr_token' => $request->input('qr_token', 'ATT-'.Str::uuid()),
         ]);
 
-        if ($attendee->user_id) {
-            $event->users()->syncWithoutDetaching([$attendee->user_id => ['role' => 'attendee']]);
+        if ($attendee->user_id && ! $event->users()->whereKey($attendee->user_id)->exists()) {
+            $event->users()->attach($attendee->user_id, ['role' => 'attendee']);
         }
 
         return $this->ok('Attendee created.', $attendee, 201);

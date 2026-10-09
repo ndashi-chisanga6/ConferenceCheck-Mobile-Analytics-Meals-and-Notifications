@@ -498,6 +498,18 @@ class ConferenceApiTest extends TestCase
         $this->assertDatabaseMissing('device_tokens', ['id' => $token->id]);
     }
 
+    public function test_linking_an_attendee_record_does_not_demote_staff(): void
+    {
+        Sanctum::actingAs($this->organiser);
+
+        $this->postJson("/api/events/{$this->event->id}/attendees", [
+            'full_name' => 'Demo Scanner',
+            'user_id' => $this->scanner->id,
+        ])->assertCreated();
+
+        $this->assertSame('scanner', $this->event->roleFor($this->scanner));
+    }
+
     public function test_scanner_cannot_download_reports(): void
     {
         Sanctum::actingAs($this->scanner);
