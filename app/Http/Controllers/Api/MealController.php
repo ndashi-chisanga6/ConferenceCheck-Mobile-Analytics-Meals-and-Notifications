@@ -47,6 +47,9 @@ class MealController extends ApiController
         if ($mealCategory->event_id !== $event->id) {
             return $this->fail('Meal category not found for this event.', null, 404);
         }
+        if (MealRedemption::query()->where('meal_category_id', $mealCategory->id)->exists()) {
+            return $this->fail('Meal category has redemptions on record and cannot be deleted.', null, 409);
+        }
 
         $mealCategory->delete();
 

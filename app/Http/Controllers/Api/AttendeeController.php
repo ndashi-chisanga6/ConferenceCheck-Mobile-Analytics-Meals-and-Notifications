@@ -6,6 +6,7 @@ use App\Http\Requests\Api\AttendeeRequest;
 use App\Models\Attendee;
 use App\Models\CheckIn;
 use App\Models\Event;
+use App\Models\MealRedemption;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +68,9 @@ class AttendeeController extends ApiController
     {
         if ($attendee->event_id !== $event->id) {
             return $this->fail('Attendee does not belong to this event.', null, 404);
+        }
+        if (MealRedemption::query()->where('attendee_id', $attendee->id)->exists()) {
+            return $this->fail('Attendee has meal redemptions on record and cannot be deleted.', null, 409);
         }
 
         $attendee->delete();

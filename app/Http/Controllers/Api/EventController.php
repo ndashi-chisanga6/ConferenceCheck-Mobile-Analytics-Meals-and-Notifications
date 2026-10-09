@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\EventRequest;
 use App\Models\Event;
+use App\Models\MealRedemption;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,10 @@ class EventController extends ApiController
 
     public function destroy(Event $event): JsonResponse
     {
+        if (MealRedemption::query()->where('event_id', $event->id)->exists()) {
+            return $this->fail('Event has meal redemptions on record and cannot be deleted.', null, 409);
+        }
+
         $event->delete();
 
         return $this->ok('Event deleted.');

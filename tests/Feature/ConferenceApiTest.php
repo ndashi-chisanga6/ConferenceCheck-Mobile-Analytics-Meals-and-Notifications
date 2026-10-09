@@ -7,9 +7,11 @@ use App\Models\ConferenceSession;
 use App\Models\DeviceToken;
 use App\Models\Event;
 use App\Models\EventNotification;
+use App\Models\MealRedemption;
 use App\Models\MealVoucher;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
@@ -508,6 +510,27 @@ class ConferenceApiTest extends TestCase
         ])->assertCreated();
 
         $this->assertSame('scanner', $this->event->roleFor($this->scanner));
+    }
+
+    public function test_redemptions_cannot_be_edited_or_deleted_away(): void
+    {
+        $redemption = MealRedemption::query()->where('event_id', $this->event->id)->firstOrFail();
+        Sanctum::actingAs($this->organiser);
+
+        $this->deleteJson("/api/events/{$this->event->id}/attendees/{$redemption->attendee_id}")->assertStatus(409);
+        $this->deleteJson("/api/events/{$this->event->id}/meal-categories/{$redemption->meal_category_id}")->assertStatus(409);
+        $this->deleteJson("/api/events/{$this->event->id}")->assertStatus(409);
+        $this->assertDatabaseHas('meal_redemptions', ['id' => $redemption->id]);
+
+        try {
+            $redemption->update(['device_id' => 'changed']);
+            $this->fail('A redemption was changed after it was recorded.');
+        } catch (\LogicException) {
+        }
+        $this->assertDatabaseMissing('meal_redemptions', ['id' => $redemption->id, 'device_id' => 'changed']);
+
+        $this->expectException(QueryException::class);
+        $this->scanner->delete();
     }
 
     public function test_scanner_cannot_download_reports(): void
