@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventNotification;
 use App\Models\MealRedemption;
 use App\Models\MealVoucher;
+use App\Models\SessionAttendance;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Database\QueryException;
@@ -187,6 +188,21 @@ class ConferenceApiTest extends TestCase
         $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendee->id])
             ->assertStatus(409)
             ->assertJsonPath('success', false);
+    }
+
+    public function test_session_scan_that_loses_a_race_gets_409_not_500(): void
+    {
+        Sanctum::actingAs($this->scanner);
+        $session = ConferenceSession::query()->where('event_id', $this->event->id)->firstOrFail();
+        $attendee = Attendee::query()->where('event_id', $this->event->id)->firstOrFail();
+        $session->attendance()->where('attendee_id', $attendee->id)->delete();
+
+        // another scanner's insert lands between our duplicate check and our insert
+        SessionAttendance::creating(fn (SessionAttendance $attendance) => $attendance->replicate()->saveQuietly());
+
+        $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendee->id])
+            ->assertStatus(409)
+            ->assertJsonPath('errors.duplicate', true);
     }
 
     public function test_notification_send_in_demo_mode(): void

@@ -7,8 +7,10 @@ use App\Http\Requests\Api\SessionScanRequest;
 use App\Models\ConferenceSession;
 use App\Models\Event;
 use App\Models\EventNotification;
+use App\Models\SessionAttendance;
 use App\Services\FirebaseNotificationService;
 use App\Services\NotificationDispatchService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +59,36 @@ class SessionController extends ApiController
             return $this->fail('Session not found for this event.', null, 404);
         }
 
-        $result = DB::transaction(function () use ($request, $event, $session) {
+        try {
+            $result = $this->recordAttendance($request, $event, $session);
+        } catch (UniqueConstraintViolationException) {
+            return $this->fail('Attendee has already checked into this session.', ['duplicate' => true], 409);
+        }
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        $count = $result['count'];
+        // The alert is dispatched after the transaction commits so a push
+        // is never sent for attendance that ends up rolled back.
+        $this->alertOrganisersOnCapacityTransition($event, $session, $count, $request->user()->id, $firebase, $dispatch);
+
+        return $this->ok('Session attendance recorded.', [
+            'attendance' => $result['attendance'],
+            'capacity_status' => $this->capacityStatus($count, $session->capacity),
+            'warning' => $count > $session->capacity ? 'Session capacity exceeded.' : null,
+        ]);
+    }
+
+    /**
+     * @return array{response: JsonResponse}|array{attendance: SessionAttendance, count: int}
+     */
+    private function recordAttendance(SessionScanRequest $request, Event $event, ConferenceSession $session): array
+    {
+        return DB::transaction(function () use ($request, $event, $session) {
+            ConferenceSession::query()->whereKey($session->id)->lockForUpdate()->first();
+
             $attendee = $request->filled('attendee_id')
                 ? $event->attendees()->whereKey($request->integer('attendee_id'))->first()
                 : $event->attendees()->where('qr_token', $request->string('attendee_qr_token'))->first();
@@ -81,21 +112,6 @@ class SessionController extends ApiController
 
             return ['attendance' => $attendance, 'count' => $session->attendance()->count()];
         });
-
-        if (isset($result['response'])) {
-            return $result['response'];
-        }
-
-        $count = $result['count'];
-        // The alert is dispatched after the transaction commits so a push
-        // is never sent for attendance that ends up rolled back.
-        $this->alertOrganisersOnCapacityTransition($event, $session, $count, $request->user()->id, $firebase, $dispatch);
-
-        return $this->ok('Session attendance recorded.', [
-            'attendance' => $result['attendance'],
-            'capacity_status' => $this->capacityStatus($count, $session->capacity),
-            'warning' => $count > $session->capacity ? 'Session capacity exceeded.' : null,
-        ]);
     }
 
     public function attendance(Event $event, ConferenceSession $session): JsonResponse
