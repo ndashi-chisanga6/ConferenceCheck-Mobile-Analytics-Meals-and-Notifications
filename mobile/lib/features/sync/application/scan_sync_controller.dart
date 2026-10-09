@@ -17,9 +17,17 @@ class ScanSyncState {
   final String? message;
 }
 
+/// Whether a failed replay got a final business answer from the server, so
+/// the queued scan can be dropped: invalid token (404), already redeemed or
+/// duplicate (409), or not redeemable right now (422). Anything else, like
+/// no connection, an expired login (401/403), rate limiting or a server
+/// fault, could succeed later, so the scan is kept.
+bool replayIsSettled(int? statusCode) =>
+    statusCode == 404 || statusCode == 409 || statusCode == 422;
+
 /// Replays queued offline scans against the API in order. A definitive
-/// server answer (success, already redeemed, duplicate, invalid token)
-/// removes the entry; a connectivity failure keeps it and stops the run.
+/// server answer removes the entry; a recoverable failure keeps it and
+/// everything after it, and stops the run.
 class ScanSyncController extends Notifier<ScanSyncState> {
   @override
   ScanSyncState build() => const ScanSyncState();
@@ -33,10 +41,10 @@ class ScanSyncController extends Notifier<ScanSyncState> {
     final remaining = <QueuedScan>[];
     var synced = 0;
     var resolved = 0;
-    var offline = false;
+    var stopped = false;
 
     for (final item in items) {
-      if (offline) {
+      if (stopped) {
         remaining.add(item);
         continue;
       }
@@ -57,17 +65,14 @@ class ScanSyncController extends Notifier<ScanSyncState> {
         }
         synced++;
       } on ApiException catch (error) {
-        if (error.statusCode == null) {
-          // Still offline: keep this and everything after it.
-          offline = true;
-          remaining.add(item);
-        } else {
-          // The server answered definitively (e.g. already redeemed while
-          // we were offline) — the entry is settled either way.
+        if (replayIsSettled(error.statusCode)) {
           resolved++;
+        } else {
+          stopped = true;
+          remaining.add(item);
         }
       } catch (_) {
-        offline = true;
+        stopped = true;
         remaining.add(item);
       }
     }
@@ -77,7 +82,7 @@ class ScanSyncController extends Notifier<ScanSyncState> {
 
     final parts = <String>[
       if (synced > 0) '$synced synced',
-      if (resolved > 0) '$resolved already processed',
+      if (resolved > 0) '$resolved refused by the server',
       if (remaining.isNotEmpty) '${remaining.length} still pending',
     ];
     state = ScanSyncState(
