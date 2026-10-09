@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Attendee;
+use App\Models\CheckIn;
 use App\Models\ConferenceSession;
 use App\Models\DeviceToken;
 use App\Models\Event;
@@ -188,6 +189,23 @@ class ConferenceApiTest extends TestCase
         $this->postJson("/api/events/{$this->event->id}/sessions/{$session->id}/scan", ['attendee_id' => $attendee->id])
             ->assertStatus(409)
             ->assertJsonPath('success', false);
+    }
+
+    public function test_check_in_that_loses_a_race_is_a_duplicate_not_a_500(): void
+    {
+        Sanctum::actingAs($this->scanner);
+        $attendee = Attendee::query()->where('event_id', $this->event->id)->whereNull('checked_in_at')->firstOrFail();
+
+        // another scanner's check-in lands between our check and our insert
+        CheckIn::creating(fn (CheckIn $checkIn) => $checkIn->replicate()->saveQuietly());
+
+        $this->postJson("/api/events/{$this->event->id}/attendees/check-in/scan", ['qr_token' => $attendee->qr_token])
+            ->assertOk()
+            ->assertJsonPath('data.duplicate', true);
+
+        $this->postJson("/api/events/{$this->event->id}/attendees/{$attendee->id}/check-in")
+            ->assertOk()
+            ->assertJsonPath('data.duplicate', true);
     }
 
     public function test_session_scan_that_loses_a_race_gets_409_not_500(): void

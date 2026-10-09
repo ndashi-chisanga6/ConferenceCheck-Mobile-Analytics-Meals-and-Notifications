@@ -7,6 +7,7 @@ use App\Models\Attendee;
 use App\Models\CheckIn;
 use App\Models\Event;
 use App\Models\MealRedemption;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,23 +85,7 @@ class AttendeeController extends ApiController
             return $this->fail('Attendee does not belong to this event.', null, 404);
         }
 
-        return DB::transaction(function () use ($request, $event, $attendee) {
-            if ($attendee->checked_in_at) {
-                return $this->ok('Attendee was already checked in.', ['duplicate' => true, 'attendee' => $attendee]);
-            }
-
-            $now = now();
-            $attendee->update(['checked_in_at' => $now]);
-            CheckIn::query()->create([
-                'event_id' => $event->id,
-                'attendee_id' => $attendee->id,
-                'checked_in_by' => $request->user()->id,
-                'method' => 'manual',
-                'checked_in_at' => $now,
-            ]);
-
-            return $this->ok('Attendee checked in successfully.', ['duplicate' => false, 'attendee' => $attendee->fresh()]);
-        });
+        return $this->checkInOnce($request, $event, $attendee, 'manual');
     }
 
     public function scan(Request $request, Event $event): JsonResponse
@@ -112,22 +97,32 @@ class AttendeeController extends ApiController
             return $this->fail('Invalid attendee QR token.', ['qr_token' => ['No attendee found for this event.']], 404);
         }
 
-        return DB::transaction(function () use ($request, $event, $attendee) {
-            if ($attendee->checked_in_at) {
-                return $this->ok('Attendee was already checked in.', ['duplicate' => true, 'attendee' => $attendee]);
-            }
+        return $this->checkInOnce($request, $event, $attendee, 'qr');
+    }
 
-            $now = now();
-            $attendee->update(['checked_in_at' => $now]);
-            CheckIn::query()->create([
-                'event_id' => $event->id,
-                'attendee_id' => $attendee->id,
-                'checked_in_by' => $request->user()->id,
-                'method' => 'qr',
-                'checked_in_at' => $now,
-            ]);
+    private function checkInOnce(Request $request, Event $event, Attendee $attendee, string $method): JsonResponse
+    {
+        try {
+            return DB::transaction(function () use ($request, $event, $attendee, $method) {
+                $attendee = Attendee::query()->whereKey($attendee->id)->lockForUpdate()->firstOrFail();
+                if ($attendee->checked_in_at) {
+                    return $this->ok('Attendee was already checked in.', ['duplicate' => true, 'attendee' => $attendee]);
+                }
 
-            return $this->ok('Attendee checked in successfully.', ['duplicate' => false, 'attendee' => $attendee->fresh()]);
-        });
+                $now = now();
+                $attendee->update(['checked_in_at' => $now]);
+                CheckIn::query()->create([
+                    'event_id' => $event->id,
+                    'attendee_id' => $attendee->id,
+                    'checked_in_by' => $request->user()->id,
+                    'method' => $method,
+                    'checked_in_at' => $now,
+                ]);
+
+                return $this->ok('Attendee checked in successfully.', ['duplicate' => false, 'attendee' => $attendee->fresh()]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            return $this->ok('Attendee was already checked in.', ['duplicate' => true, 'attendee' => $attendee->fresh()]);
+        }
     }
 }
