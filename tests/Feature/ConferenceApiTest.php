@@ -10,11 +10,14 @@ use App\Models\Event;
 use App\Models\EventNotification;
 use App\Models\MealRedemption;
 use App\Models\MealVoucher;
+use App\Models\NotificationRecipient;
 use App\Models\SessionAttendance;
 use App\Models\User;
+use App\Services\FirebaseNotificationService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -292,6 +295,32 @@ class ConferenceApiTest extends TestCase
             $csv = $this->get("/api/events/{$this->event->id}/reports/{$file}")->assertOk()->streamedContent();
             $this->assertCount($count + 1, array_filter(explode("\n", trim($csv))), $file);
         }
+    }
+
+    public function test_pushes_go_out_after_the_recipient_rows_are_committed(): void
+    {
+        Sanctum::actingAs($this->organiser);
+        $outside = DB::transactionLevel();
+        $calledAt = null;
+        $rowsBeforePush = 0;
+
+        $this->mock(FirebaseNotificationService::class, function ($mock) use (&$calledAt, &$rowsBeforePush): void {
+            $mock->shouldReceive('send')->once()->andReturnUsing(function (array $tokens) use (&$calledAt, &$rowsBeforePush) {
+                $calledAt = DB::transactionLevel();
+                $rowsBeforePush = NotificationRecipient::query()->where('status', 'pending')->count();
+
+                return ['success' => true, 'demo' => false, 'sent_count' => count($tokens), 'failed_count' => 0, 'token_results' => array_fill_keys($tokens, true)];
+            });
+        });
+
+        $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'Room change',
+            'message' => 'Track B moves to Hall 2.',
+            'target_type' => 'all_attendees',
+        ])->assertOk();
+
+        $this->assertSame($outside, $calledAt);
+        $this->assertGreaterThan(0, $rowsBeforePush);
     }
 
     public function test_notification_send_uses_fcm_v1_when_configured(): void

@@ -11,7 +11,6 @@ use App\Services\FirebaseNotificationService;
 use App\Services\NotificationDispatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class NotificationController extends ApiController
 {
@@ -50,18 +49,16 @@ class NotificationController extends ApiController
 
     public function send(NotificationSendRequest $request, Event $event, FirebaseNotificationService $firebase, NotificationDispatchService $dispatch): JsonResponse
     {
-        return DB::transaction(function () use ($request, $event, $firebase, $dispatch) {
-            $notification = EventNotification::query()->create($request->validated() + [
-                'event_id' => $event->id,
-                'sent_by' => $request->user()->id,
-                'status' => 'draft',
-            ]);
+        $notification = EventNotification::query()->create($request->validated() + [
+            'event_id' => $event->id,
+            'sent_by' => $request->user()->id,
+            'status' => 'draft',
+        ]);
 
-            $recipients = $dispatch->resolveRecipients($event, $request->string('target_type')->toString(), $request->integer('target_session_id') ?: null);
-            $result = $dispatch->deliver($notification, $recipients, $firebase);
+        $recipients = $dispatch->resolveRecipients($event, $request->string('target_type')->toString(), $request->integer('target_session_id') ?: null);
+        $result = $dispatch->deliver($notification, $recipients, $firebase);
 
-            return $this->ok('Notification sent.', ['notification' => $notification->fresh('recipients'), 'firebase' => $result]);
-        });
+        return $this->ok('Notification sent.', ['notification' => $notification->fresh('recipients'), 'firebase' => $result]);
     }
 
     public function show(Request $request, Event $event, EventNotification $notification): JsonResponse

@@ -32,23 +32,28 @@ class NotificationDispatchService
         $tokensByUser = [];
         $rows = [];
 
-        foreach ($recipients as $recipient) {
-            $row = NotificationRecipient::query()->create([
-                'notification_id' => $notification->id,
-                'user_id' => $recipient['user_id'],
-                'attendee_id' => $recipient['attendee_id'],
-                'status' => 'pending',
-            ]);
+        // recipient rows are committed before anything is pushed, and the
+        // firebase calls run outside the transaction so a slow send never
+        // holds it open and a rollback can't undo a push that already went out
+        DB::transaction(function () use ($notification, $recipients, &$tokensByUser, &$rows): void {
+            foreach ($recipients as $recipient) {
+                $row = NotificationRecipient::query()->create([
+                    'notification_id' => $notification->id,
+                    'user_id' => $recipient['user_id'],
+                    'attendee_id' => $recipient['attendee_id'],
+                    'status' => 'pending',
+                ]);
 
-            if ($recipient['user_id'] && ! array_key_exists($recipient['user_id'], $tokensByUser)) {
-                $tokensByUser[$recipient['user_id']] = DeviceToken::query()
-                    ->where('user_id', $recipient['user_id'])
-                    ->pluck('token')
-                    ->all();
+                if ($recipient['user_id'] && ! array_key_exists($recipient['user_id'], $tokensByUser)) {
+                    $tokensByUser[$recipient['user_id']] = DeviceToken::query()
+                        ->where('user_id', $recipient['user_id'])
+                        ->pluck('token')
+                        ->all();
+                }
+
+                $rows[] = ['id' => $row->id, 'user_id' => $recipient['user_id']];
             }
-
-            $rows[] = ['id' => $row->id, 'user_id' => $recipient['user_id']];
-        }
+        });
 
         $tokens = array_values(array_unique(array_merge(...array_values($tokensByUser) ?: [[]])));
         $result = $firebase->send($tokens, $notification->title, $notification->message);
