@@ -260,6 +260,22 @@ class ConferenceApiTest extends TestCase
             ->assertHeader('content-type', 'text/csv; charset=UTF-8');
     }
 
+    public function test_every_export_has_one_row_per_database_record(): void
+    {
+        Sanctum::actingAs($this->organiser);
+        $expected = [
+            'attendance.csv' => Attendee::query()->where('event_id', $this->event->id)->count(),
+            'meals.csv' => MealRedemption::query()->where('event_id', $this->event->id)->count(),
+            'sessions.csv' => ConferenceSession::query()->where('event_id', $this->event->id)->count(),
+            'notifications.csv' => EventNotification::query()->where('event_id', $this->event->id)->count(),
+        ];
+
+        foreach ($expected as $file => $count) {
+            $csv = $this->get("/api/events/{$this->event->id}/reports/{$file}")->assertOk()->streamedContent();
+            $this->assertCount($count + 1, array_filter(explode("\n", trim($csv))), $file);
+        }
+    }
+
     public function test_notification_send_uses_fcm_v1_when_configured(): void
     {
         $opensslConfig = [];
