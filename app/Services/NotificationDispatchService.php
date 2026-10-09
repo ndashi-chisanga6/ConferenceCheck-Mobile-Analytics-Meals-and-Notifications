@@ -21,7 +21,8 @@ class NotificationDispatchService
      * was pushed to them, and the in-app inbox is how they receive the message.
      * Recording one aggregate outcome against every row instead would make the
      * delivery record unable to answer the question it exists to answer, which
-     * is whether a given person was reached.
+     * is whether a given person was reached. In demo mode nothing is pushed,
+     * so the notification and every recipient are marked `demo`.
      *
      * @param  array<int, array{user_id: int|null, attendee_id: int|null}>  $recipients
      * @return array{success: bool, demo: bool, sent_count: int, failed_count: int, token_results: array<string, bool>}
@@ -51,6 +52,14 @@ class NotificationDispatchService
 
         $tokens = array_values(array_unique(array_merge(...array_values($tokensByUser) ?: [[]])));
         $result = $firebase->send($tokens, $notification->title, $notification->message);
+
+        if ($result['demo']) {
+            NotificationRecipient::query()->where('notification_id', $notification->id)
+                ->update(['status' => 'demo', 'failure_reason' => 'Demo mode, nothing was delivered.']);
+            $notification->update(['status' => 'demo', 'sent_at' => null, 'failure_reason' => 'Demo mode, nothing was delivered.']);
+
+            return $result;
+        }
 
         $delivered = [];
         $refused = [];

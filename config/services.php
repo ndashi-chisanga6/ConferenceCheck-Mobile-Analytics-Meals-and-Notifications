@@ -38,7 +38,7 @@ return [
     'firebase' => [
         'project_id' => env('FIREBASE_PROJECT_ID'),
         'credentials_path' => env('FIREBASE_CREDENTIALS_PATH'),
-        'demo_mode' => env('FIREBASE_DEMO_MODE', true),
+        'demo_mode' => env('FIREBASE_DEMO_MODE', false),
     ],
 
 ];

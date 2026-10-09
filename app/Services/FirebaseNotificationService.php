@@ -21,19 +21,33 @@ class FirebaseNotificationService
     public function send(array $tokens, string $title, string $message): array
     {
         $tokens = array_values(array_filter(array_unique($tokens)));
-        $demoMode = filter_var(config('services.firebase.demo_mode', true), FILTER_VALIDATE_BOOL);
+        $demoMode = filter_var(config('services.firebase.demo_mode', false), FILTER_VALIDATE_BOOL);
         $credentials = config('services.firebase.credentials_path');
         $projectId = config('services.firebase.project_id');
 
-        if ($demoMode || ! is_string($credentials) || $credentials === '' || ! is_string($projectId) || $projectId === '' || ! file_exists($credentials)) {
-            Log::info('Firebase demo notification sent', compact('tokens', 'title', 'message'));
+        // demo mode delivers nothing, so it reports zero sent and the caller
+        // records it as demo, never as delivery
+        if ($demoMode) {
+            Log::warning('Firebase DEMO MODE: nothing was delivered.', ['token_count' => count($tokens), 'title' => $title]);
 
             return [
                 'success' => true,
                 'demo' => true,
-                'sent_count' => count($tokens),
+                'sent_count' => 0,
                 'failed_count' => 0,
-                'token_results' => array_fill_keys($tokens, true),
+                'token_results' => [],
+            ];
+        }
+
+        if (! is_string($credentials) || $credentials === '' || ! is_string($projectId) || $projectId === '' || ! file_exists($credentials)) {
+            Log::error('Firebase is not configured and demo mode is off, so nothing was sent.');
+
+            return [
+                'success' => false,
+                'demo' => false,
+                'sent_count' => 0,
+                'failed_count' => count($tokens),
+                'token_results' => array_fill_keys($tokens, false),
             ];
         }
 

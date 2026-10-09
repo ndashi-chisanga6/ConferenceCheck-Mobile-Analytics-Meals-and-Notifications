@@ -234,8 +234,26 @@ class ConferenceApiTest extends TestCase
             'target_type' => 'all_attendees',
         ])->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.notification.status', 'sent')
-            ->assertJsonPath('data.firebase.demo', true);
+            ->assertJsonPath('data.notification.status', 'demo')
+            ->assertJsonPath('data.firebase.demo', true)
+            ->assertJsonPath('data.firebase.sent_count', 0);
+        $this->assertSame(0, EventNotification::query()->where('title', 'Schedule update')->firstOrFail()->recipients()->where('status', 'sent')->count());
+    }
+
+    public function test_missing_firebase_config_fails_instead_of_faking_success(): void
+    {
+        config(['services.firebase.demo_mode' => false, 'services.firebase.credentials_path' => null, 'services.firebase.project_id' => null]);
+        Sanctum::actingAs($this->organiser);
+
+        $this->postJson("/api/events/{$this->event->id}/notifications/send", [
+            'title' => 'No firebase here',
+            'message' => 'This should not count as delivered.',
+            'target_type' => 'all_attendees',
+        ])->assertOk()
+            ->assertJsonPath('data.notification.status', 'failed')
+            ->assertJsonPath('data.firebase.demo', false)
+            ->assertJsonPath('data.firebase.success', false);
+        $this->assertSame(0, EventNotification::query()->where('title', 'No firebase here')->firstOrFail()->recipients()->where('status', 'sent')->count());
     }
 
     public function test_custom_target_is_rejected_instead_of_sent_to_everyone(): void
@@ -464,7 +482,7 @@ class ConferenceApiTest extends TestCase
         $warning = EventNotification::query()->where('target_session_id', $session->id)->where('title', 'Session filling up')->first();
         $this->assertNotNull($warning);
         $this->assertSame('organisers', $warning->target_type);
-        $this->assertSame('sent', $warning->status);
+        $this->assertSame('demo', $warning->status);
         $this->assertGreaterThan(0, $warning->recipients()->count());
 
         // Scan 4 exceeds capacity.

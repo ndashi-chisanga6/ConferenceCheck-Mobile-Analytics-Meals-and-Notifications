@@ -64,15 +64,15 @@ Accept: application/json
 
 ## Firebase Demo Mode
 
-Notifications are safe to run without Firebase credentials:
+Real push needs a Firebase project and a service-account key:
 
 ```env
 FIREBASE_PROJECT_ID=
 FIREBASE_CREDENTIALS_PATH=
-FIREBASE_DEMO_MODE=true
+FIREBASE_DEMO_MODE=false
 ```
 
-When demo mode is enabled or credentials are missing, notifications are logged and marked as sent without making an external Firebase call.
+If the credentials are missing the send fails and the notification is marked `failed`. To try the app without Firebase, set `FIREBASE_DEMO_MODE=true`: nothing is pushed, a warning is logged, the response says `"demo": true`, and the notification and its recipients are marked `demo`, never `sent`, so a demo run can't be mistaken for delivery.
 
 ## Testing
 
