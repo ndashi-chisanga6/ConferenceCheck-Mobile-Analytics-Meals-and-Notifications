@@ -3,7 +3,7 @@
 **Project:** ConferenceCheck Mobile: Analytics, Meals and Notifications (component 4.3b)
 **Student:** Ndashi Bwalya Chisanga (2021470105) · **Supervisor:** Mr. Mofya Phiri
 
-This log supports the disclosure required by Section 9 of the approved
+This log supports the disclosure required by Section 9 of the
 proposal and reproduced as Appendix A of `docs/paper/conferencecheck-paper.md`.
 
 ## Status of this log
@@ -26,10 +26,10 @@ honest than stating plainly that the contemporaneous log does not exist.
   altering analytical content or conclusions.
 - Clarifying questions about library APIs and language syntax.
 
-AI tools were not used to design the voucher redemption protocol, the
-capacity alerting rules, the evaluation methodology, or the interpretation
-of evaluation results, as these constitute the project's academic
-contribution.
+Up to 30 September 2026, AI tools were not used to design the voucher
+redemption protocol, the capacity alerting rules, the evaluation methodology,
+or the interpretation of evaluation results. The work after the supervisor's
+comments, logged below, went beyond this scope.
 
 ## Validation applied to AI-assisted output (Proposal §9.3)
 
@@ -48,8 +48,16 @@ Material provided to tools was limited to project source code, project
 documentation drafts, and error/test output, all of which are the student's
 own and already public in the repository.
 
-## Recommendation for remaining work
+## Work after the supervisor's comments, 7 to 10 October 2026
 
-Any AI assistance used between the date of this entry and final submission
-should be logged here per-episode (tool, date, task, outcome) so that the
-gap described above does not extend further.
+Tool: Claude (Anthropic), through Claude Code. Each item is a commit in the
+repository history, listed with its date in `docs/remaining_work.md`.
+
+| Dates | Task | Outcome |
+|---|---|---|
+| 07/10 to 09/10 | Authorisation fixes and their negative tests (seven commits) | Code and tests written by Claude, reviewed and committed by the student |
+| 09/10 | 409 handling and row locks on the meal, session and check-in scan paths; restrictions on the redemption record | Code and tests written by Claude, reviewed and committed by the student |
+| 09/10 | Chunked CSV exports; Firebase demo mode and dispatch changes | Code and tests written by Claude, reviewed and committed by the student |
+| 09/10 to 10/10 | Offline replay fixes and Flutter replay tests | Code and tests written by Claude, reviewed and committed by the student |
+| 10/10 | Concurrency experiment, freshness measurement, SQL export checks | Designed, written and run by Claude at the student's direction; results checked by the student |
+| 10/10 | Revised report, validation document, remaining-work account | Drafted by Claude, reviewed and edited by the student |
