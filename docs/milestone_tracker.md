@@ -2,7 +2,7 @@
 
 **Student:** Ndashi Bwalya Chisanga (2021470105) · **Supervisor:** Mr. Mofya Phiri
 **Repository:** https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications (branch `main`)
-**Proposal date:** 28 March 2026 · **Last verified:** 22 September 2026 (55/55 backend tests passing, 213 assertions, PHPStan level 7 clean, Pint clean; `flutter analyze` clean, 19/19 Flutter tests passing; simulated-event evaluation meets every Table 3 target; milestone tags resolve on `main`)
+**Proposal date:** 28 March 2026 · **Last verified:** 10 October 2026 (70/70 backend tests passing, 288 assertions, of which 31 tests, 152 assertions, in `tests/Feature/ConferenceApiTest.php` exercise this component and 39 are the Laravel starter kit's; PHPStan level 7 clean, Pint clean; `flutter analyze` clean, 27/27 Flutter tests passing; per-criterion status against Table 3 in the report's Table 2: four met, two partly met, fleet push delivery not measured, manual baseline not run; work since the supervisor's comments in `docs/remaining_work.md`)
 
 Commit links use the short hash; full history is on the
 [commits page](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commits/main).

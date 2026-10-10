@@ -101,10 +101,11 @@ report does not re-derive figures independently of it.
 | Table | Title | Section | Page |
 |---|---|---|---|
 | 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 10 |
-| 2 | Headline results against the proposal's Table 3 acceptance criteria | 6 | 15 |
+| 2 | Status of each acceptance criterion in the proposal's Table 3 | 6 | 15 |
 | 3 | Adversarial and live checks, strict review | 6.1 | 15 |
 | 4 | Latency by endpoint against the proposal's targets | 6.4 | 16 |
 | 5 | Export correctness, CSV rows against database ground truth | 6.6 | 17 |
+| 6 | Status of each objective | 9 | 20 |
 | B1 | Defects found during review and their fixes | B | 23 |
 | C1 | Full evaluation output, `tools/evaluation-results.json` | C | 24 |
 | F1 | Verification of every reference, including the one withdrawn | F | 36 |
@@ -150,17 +151,22 @@ extends the design to intermittent venue connectivity. The system was
 evaluated against a seeded 500-attendee event with three meal categories and a
 voucher per attendee per category, ten sessions and scripted concurrent-fraud
 scenarios, driven through the live API rather than through unit-level mocks.
-Every criterion in the proposal's Table 3 was met: 100% duplicate-redemption
-rejection across 100 sequential and 20 concurrent duplicate submissions, with
-every concurrency race resolving to exactly one success; all three categories
-redeemable independently for every one of twenty attendees holding a voucher in
-each; median voucher-scan latency of 187.5 ms (95th percentile 286.7 ms);
-dashboard staleness bounded at approximately 30.2 seconds; and byte-exact CSV
-exports against database ground truth for both attendance and meal
-redemptions. A live, human-staffed manual baseline
-was not run, and this is stated as a limitation rather than approximated
-with a fabricated figure; the qualitative argument instead rests on the
-system's measured 188 ms scan-to-decision time and the fact that a paper
+Not every criterion in the proposal's Table 3 was met, and Table 2 of this
+report gives the status of each. Duplicate redemption was refused in 100 of 100 sequential
+re-scans. In a concurrency experiment on PostgreSQL behind five server
+processes, every one of 50 five-way races produced exactly one redemption
+whenever the row lock or the unique constraint was in place, while a plain
+check-then-insert with both removed redeemed 48 of 50 vouchers more than once.
+All three categories were redeemable independently for each of twenty
+attendees. Median voucher-scan latency was 145.3 ms (95th percentile
+261.0 ms), measured over loopback. Twenty check-ins injected at random
+moments appeared on the dashboard after a median of 18.1 s and at most
+28.5 s. All four CSV exports matched direct SQL queries on row counts and
+totals. Capacity alerting was shown working but not timed, push delivery
+across a fleet of devices was not measured, and a live, human-staffed manual
+baseline was not run; these are stated as gaps rather than approximated with
+fabricated figures, and the qualitative argument for the baseline rests on
+the system's measured 145 ms scan-to-decision time and the fact that a paper
 voucher has no server-side check to fail. The results indicate that placing
 anti-fraud guarantees in the database's constraint machinery, rather than in
 application code, eliminates time-of-check-to-time-of-use races by
@@ -226,16 +232,21 @@ attendee communication.
 ### 1.3 Objectives
 
 1. To design and implement a real-time analytics dashboard showing check-in
-   progress, check-in rates and trends for event organisers.
+   progress, check-in rates and trends for event organisers. "Real-time" was
+   delivered as near-real-time by design: the dashboard polls every 30
+   seconds (Section 3.6).
 2. To build a QR-code based meal voucher scanning and redemption system
    that enforces single-use redemption across multiple meal categories.
 3. To implement session attendance tracking with capacity management and
    overcrowding alerts.
-7. To build a push notification system for attendee communications and
+4. To build a push notification system for attendee communications and
    schedule updates, with per-recipient delivery records.
-8. To implement reporting and data export (CSV) functionality for event
+5. To implement reporting and data export (CSV) functionality for event
    organisers.
-9. To produce comprehensive technical documentation and a
+6. To evaluate redemption correctness, scan latency, dashboard freshness,
+   notification delivery and export correctness against the Table 3 targets
+   and a manual baseline.
+7. To produce comprehensive technical documentation and a
    publication-ready paper.
 
 ### 1.4 Scope
@@ -662,24 +673,27 @@ Section 6.
 
 ## 6. Results
 
-**Table 2. Headline results against the proposal's Table 3 acceptance
-criteria. Source: `tools/evaluation-results.json`.**
+**Table 2. Status of each acceptance criterion in the proposal's Table 3. Sources:
+`tools/evaluation-results.json`, `tools/concurrency-results.json`,
+`tools/freshness-results.json`.**
 
-| Measure | Result | Proposal threshold |
-|---|---|---|
-| Duplicate redemption rejection, sequential | 100/100 (100%) | 100% |
-| Duplicate redemption rejection, concurrent races | 20/20 races, exactly one success each | 100% |
-| Cross-category independence | 20/20 attendees redeemed all 3 categories | all categories independent |
-| Voucher scan latency, median / p95 (n=200) | 187.5 ms / 286.7 ms | < 500 ms / < 1,000 ms |
-| Session scan latency, median / p95 (n=40) | 174.5 ms / 266.5 ms | < 500 ms / < 1,000 ms |
-| Session duplicate rejection | 20/20 (100%) | 100% |
-| Dashboard freshness, worst case | ≈ 30.2 s | ≤ 30 s |
-| Export correctness | exact (780/780 rows) | exact |
+| Criterion (proposal Table 3) | Target | Result | Status |
+|---|---|---|---|
+| Duplicate redemption rejection, including concurrent submissions | 100% | 100/100 sequential re-scans refused; on PostgreSQL behind five server processes, 50/50 five-way races with exactly one redemption with the lock, the constraint or both in place; with both removed, 48/50 vouchers redeemed more than once (Section 6.2) | Met |
+| Scan validation latency | median < 500 ms, p95 < 1 s | voucher scan 145.3 ms / 261.0 ms (n=200); session scan 128.4 ms / 228.7 ms (n=40) | Met on loopback only (Section 8) |
+| Dashboard freshness | ≤ 30 s behind the database | 20 injected check-ins: median 18.1 s, p95 28.4 s, max 28.5 s, 20/20 within 30 s | Met in the measured run; by design the worst case is one 30 s cycle plus a fetch, fractionally over 30 s (Section 6.5) |
+| Capacity warning before 100% occupancy | warning delivered before full | two automated transition tests; one observation on an emulator | Partly met: shown, not timed |
+| Push delivery | ≥ 95% of online devices within 30 s | one device, one observed delivery of about 5 s | Not measured |
+| In-app inbox reach | 100% of recipients on next open | a recipient record for every recipient, inbox reads filtered to recipients and tested; not measured on devices | Partly met |
+| Export correctness | row counts and totals equal to the database | all four exports equal to direct SQL on row counts and on a total each (Section 6.6) | Met |
+| Comparison with a manual baseline | measured against a staffed paper line | not run (Section 6.8) | Not run |
 
-Every committed acceptance criterion is met, with margin. The narrowest
-margin is dashboard freshness, which is bound by the polling interval
-documented as a deliberate architectural choice (Section 3.6), not by
-anything that could fail on a different run.
+Two further results are not Table 3 criteria but test the guarantees the
+design rests on: all three categories were redeemable independently for 20 of
+20 attendees, and 20 of 20 sequential duplicate session scans were refused.
+Four criteria are met, one of them on loopback only; two are partly met; push
+delivery across a fleet was not measured; and the manual baseline was not
+run.
 
 ### 6.1 Automated correctness verification
 
@@ -916,16 +930,25 @@ measured staleness bound, session capacity tracking with automatic
 overcrowding alerts, dual-channel notifications that compensate explicitly
 for best-effort push delivery, and an offline scan queue whose safety is a
 direct consequence of the same idempotent design that protects the
-redemption protocol. Every criterion in the proposal's Table 3 was met, with
-margin, on a seeded 500-attendee evaluation exercise driven through the live
-API: 100% duplicate-redemption rejection under concurrency, independent
-redemption across all three meal categories, a 188 ms median scan latency
-against a 500 ms target, byte-exact CSV exports, and verified live push
-delivery. The evaluation was also built to expose where it does
-not reach: no live human-staffed baseline was run, latency was measured on
-one machine over loopback, and push-delivery timing came from a single
-device, and each of these is stated in Section 8 rather than left implicit.
-All six objectives set at proposal stage are met. Future work should
+redemption protocol. Table 2 gives the status of each criterion in the
+proposal's Table 3:
+four are met, one of them on loopback only, two are partly met, fleet-scale
+push delivery was not measured and the manual baseline was not run. Table 6
+states where each objective stands.
+
+**Table 6. Status of each objective (Section 1.3).**
+
+| Objective | Status | Evidence |
+|---|---|---|
+| 1. Analytics dashboard | Met, as near-real-time: a 30 s poll by design rather than a live stream | Figures 2 and 3; 20/20 injected check-ins visible within 30 s (Section 6.5) |
+| 2. Single-use meal vouchers across categories | Met | Section 6.2 and the concurrency experiment; cross-category independence 20/20 |
+| 3. Session attendance, capacity and overcrowding alerts | Met in function; alert timing not measured | Section 6.3; two transition tests and one emulator observation |
+| 4. Push notifications with per-recipient delivery records | Built and verified end to end on one device; delivery across a fleet not measured | Section 6.7 |
+| 5. Reporting and CSV export | Met | All four exports equal to direct SQL (Section 6.6) |
+| 6. Evaluation against Table 3 and a manual baseline | Partly met: every criterion was measured or tested except fleet push delivery and the manual baseline, which was not run | Table 2 |
+| 7. Documentation and a publication-ready paper | Documentation done; the paper is substantially done but not yet publication-ready | this report, `docs/` |
+
+Future work should
 validate the system against a live conference deployment, replace dashboard
 polling with a WebSocket stream, extend offline redemption with conflict
 resolution jointly with component 4.3a's synchronisation engine, verify iOS

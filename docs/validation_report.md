@@ -42,24 +42,27 @@ a voucher issued per attendee per category for 1,500 vouchers in all, and ten
 sessions (`tools/seed-evaluation-event.php`), then drives it through the real
 API (`tools/run-evaluation.py`) rather than through unit-level mocks.
 
-| Measure | Result | Proposal threshold |
-|---|---|---|
-| Duplicate redemption rejection, sequential re-scans | 100/100 (100%) | 100% |
-| Duplicate redemption rejection, concurrent races | 20/20 races, exactly one success each | 100% |
-| Cross-category independence | 20/20 attendees redeemed all 3 categories | all categories independent |
-| Voucher scan latency, median / p95 (n=200) | 187.5 ms / 286.7 ms | < 500 ms / < 1,000 ms |
-| Session scan latency, median / p95 (n=40) | 174.5 ms / 266.5 ms | < 500 ms / < 1,000 ms |
-| Session duplicate rejection | 20/20 (100%) | 100% |
-| Dashboard/analytics freshness, worst case | ≈ 30.2 s (30 s poll + 211.6 ms endpoint) | ≤ 30 s |
-| Export correctness | exact (780/780 rows across both reports) | exact |
+| Criterion (proposal Table 3) | Target | Result | Status |
+|---|---|---|---|
+| Duplicate redemption rejection, including concurrent submissions | 100% | 100/100 sequential re-scans refused; on PostgreSQL behind five server processes, 50/50 five-way races with exactly one redemption with the lock, the constraint or both in place; with both removed, 48/50 vouchers redeemed more than once (Section 1) | Met |
+| Scan validation latency | median < 500 ms, p95 < 1 s | voucher scan 145.3 ms / 261.0 ms (n=200); session scan 128.4 ms / 228.7 ms (n=40) | Met on loopback only (Section 3) |
+| Dashboard freshness | ≤ 30 s behind the database | 20 injected check-ins: median 18.1 s, p95 28.4 s, max 28.5 s, 20/20 within 30 s | Met in the measured run; by design the worst case is one 30 s cycle plus a fetch, fractionally over 30 s (Section 4) |
+| Capacity warning before 100% occupancy | warning delivered before full | two automated transition tests; one observation on an emulator | Partly met: shown, not timed |
+| Push delivery | ≥ 95% of online devices within 30 s | one device, one observed delivery of about 5 s | Not measured |
+| In-app inbox reach | 100% of recipients on next open | a recipient record for every recipient, inbox reads filtered to recipients and tested; not measured on devices | Partly met |
+| Export correctness | row counts and totals equal to the database | all four exports equal to direct SQL on row counts and on a total each (Section 5) | Met |
+| Comparison with a manual baseline | measured against a staffed paper line | not run (Section 7) | Not run |
 
-Every committed acceptance criterion in Table 3 is met, with margin, on this
-run. The narrowest margin is dashboard freshness, which is bound by the
-30-second polling interval documented as a deliberate trade-off in the
-proposal's limitations (Section 8), not by anything measured here.
+Four criteria are met, one of them on loopback only; two are partly met; push
+delivery across a fleet was not measured; and the manual baseline was not
+run. Two further results test the guarantees the design rests on: all three
+categories were redeemable independently for 20 of 20 attendees, and 20 of 20
+sequential duplicate session scans were refused.
 
-Source: `tools/evaluation-results.json`, produced by
-`python tools/run-evaluation.py` against `tools/seed-evaluation-event.php`.
+Sources: `tools/evaluation-results.json` (`python tools/run-evaluation.py`
+against `tools/seed-evaluation-event.php`), `tools/concurrency-results.json`
+(`python tools/run-concurrency-experiment.py`) and
+`tools/freshness-results.json` (`python tools/measure-dashboard-freshness.py`).
 
 ## 0.1 Auditable evidence
 
