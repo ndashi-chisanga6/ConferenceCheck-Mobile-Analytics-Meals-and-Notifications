@@ -103,9 +103,10 @@ report does not re-derive figures independently of it.
 | 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 10 |
 | 2 | Status of each acceptance criterion in the proposal's Table 3 | 6 | 15 |
 | 3 | Adversarial and live checks, strict review | 6.1 | 15 |
-| 4 | Latency by endpoint against the proposal's targets | 6.4 | 16 |
-| 5 | Export correctness, CSV rows against database ground truth | 6.6 | 17 |
-| 6 | Status of each objective | 9 | 20 |
+| 4 | Concurrent redemption on PostgreSQL behind five server processes | 6.2 | 16 |
+| 5 | Latency by endpoint against the proposal's targets | 6.4 | 16 |
+| 6 | Export correctness, each CSV export against SQL run directly on the database | 6.6 | 17 |
+| 7 | Status of each objective | 9 | 20 |
 | B1 | Defects found during review and their fixes | B | 23 |
 | C1 | Full evaluation output, `tools/evaluation-results.json` | C | 24 |
 | F1 | Verification of every reference, including the one withdrawn | F | 36 |
@@ -136,18 +137,19 @@ and evaluation of ConferenceCheck Mobile: Analytics, Meals and Notifications,
 component 4.3b of a two-part conference management companion application
 whose sibling component, 4.3a, delivers attendee check-in capture and
 offline synchronisation separately. This project consumes check-in data
-through a shared REST API contract and contributes four capabilities that
+through the REST API contract agreed with 4.3a, with a minimal check-in stub
+standing in for 4.3a during development, and contributes four capabilities that
 carry equal weight in its evaluation: a QR-code based meal voucher protocol
-in which single-use redemption is enforced structurally, through
-database-level row locking and an append-only redemption relation with a
-per-voucher uniqueness constraint, rather than through application-level
-checks; a near-real-time analytics dashboard with a bounded 30-second
-staleness guarantee; session attendance tracking with configurable capacity
+in which single-use redemption is enforced in the database, by a row lock
+and a per-voucher uniqueness constraint on an append-only redemption
+relation, either of which alone prevents a second redemption; a
+near-real-time analytics dashboard refreshed every 30 seconds; session attendance tracking with configurable capacity
 thresholds and automatic overcrowding alerts; and dual-channel attendee
 notifications, combining Firebase Cloud Messaging push with an authenticated
 in-app feed carrying per-recipient delivery records. An offline scan queue,
-whose safe replay follows from the server's idempotent scan semantics,
-extends the design to intermittent venue connectivity. The system was
+whose safe replay follows from the server's idempotent scan semantics and
+which keeps any scan the server has not definitively answered, extends the
+design to intermittent venue connectivity. The system was
 evaluated against a seeded 500-attendee event with three meal categories and a
 voucher per attendee per category, ten sessions and scripted concurrent-fraud
 scenarios, driven through the live API rather than through unit-level mocks.
@@ -167,11 +169,10 @@ across a fleet of devices was not measured, and a live, human-staffed manual
 baseline was not run; these are stated as gaps rather than approximated with
 fabricated figures, and the qualitative argument for the baseline rests on
 the system's measured 145 ms scan-to-decision time and the fact that a paper
-voucher has no server-side check to fail. The results indicate that placing
-anti-fraud guarantees in the database's constraint machinery, rather than in
-application code, eliminates time-of-check-to-time-of-use races by
-construction while keeping scan-point latency well within interactive
-bounds.
+voucher has no server-side check to fail. The results indicate that a row lock and a
+unique constraint each prevent double redemption under real parallel load,
+where a plain check-then-insert does not, while keeping scan-point latency
+well within interactive bounds.
 
 ## 1. Introduction
 
@@ -442,7 +443,7 @@ guarantees.**
 | `attendees` | Event attendee records, shared with 4.3a | Unique `ticket_code`; unique `qr_token` |
 | `meal_categories` | Meal windows, for example Breakfast, Lunch, VIP Lunch | Owned by event; time-windowed |
 | `meal_vouchers` | One voucher per attendee per category | Unique `qr_token`; unique `(attendee, category)` pair |
-| `meal_redemptions` | Immutable, append-only record of each redemption | Unique `meal_voucher_id` enforces single use |
+| `meal_redemptions` | Append-only record of each redemption; the model refuses updates and deletes | Unique `meal_voucher_id` enforces single use; foreign keys restrict rather than cascade deletes |
 | `event_sessions` / `session_attendance` | Conference sessions and per-session attendance | Unique `(session, attendee)` prevents duplicate attendance |
 | `device_tokens` / `notification_recipients` | FCM registration and per-recipient delivery records | Delivery auditable per user and per notification |
 
@@ -457,30 +458,36 @@ token and submits it with its own device identifier to the scan endpoint.
 The server resolves the token to a voucher, verifying that it belongs to the
 event being served and that the category's service window is open. Within a
 database transaction, the server locks the voucher row
-(`lockForUpdate()`) and inserts a redemption record; the unique constraint
-on the voucher identifier guarantees that if two scanners submit the same
-token concurrently, exactly one insert succeeds and the other receives a
-definitive "already redeemed" response naming the earlier redemption time
-[16]. The redemption record, including the redeeming device identifier and
-timestamp, is immutable thereafter, providing a complete audit trail for
-post-event reconciliation. This design places the single-use guarantee in
-the database's constraint machinery rather than in application-level
-checks, eliminating time-of-check-to-time-of-use races by construction. The
-concurrency behaviour this protocol is designed to produce is measured
-directly in Section 6.2.
+(`lockForUpdate()`), so a second scan of the same voucher waits until the
+first transaction ends. It then checks that the voucher is still unused; a
+scan that finds it already redeemed receives a definitive "already redeemed"
+response naming the earlier redemption time [16]. Only then does it mark the
+voucher redeemed and insert the redemption record. The unique constraint on
+the record's voucher identifier is a second, independent guarantee: if the
+lock were ever missing, the second insert would fail, and that failure is
+caught and returned as the same "already redeemed" response rather than as a
+server error. The redemption record, including the redeeming device
+identifier and timestamp, cannot be changed afterwards: the model refuses
+updates and deletes, and the foreign keys restrict, rather than cascade, the
+deletion of the event, attendee, category, voucher or user it refers to, so it
+remains a complete audit trail for post-event reconciliation. Section 6.2
+measures the protocol under real parallel load, including with each of the
+two guarantees removed.
 
 ### 3.4 Session attendance and capacity alerting
 
 Each session carries a room capacity. Attendee entry is recorded by scanning
 the attendee's QR badge at the session door; the unique `(session,
 attendee)` constraint prevents double counting. The backend evaluates
-occupancy against capacity on every scan and exposes threshold states:
+occupancy against capacity on every scan, under a lock on the session row
+that serialises scans of one session, and exposes threshold states:
 `available`, `warning` at or above a configurable fraction of capacity
 (default 90%), and `over_capacity`. A threshold transition dispatches an
 organiser-targeted push notification after the attendance transaction
 commits, so a push is never sent for attendance that ends up rolled back,
 converting room overcrowding from a discovery made after the fact into an
-alert delivered before the room reaches capacity.
+alert intended to arrive before the room reaches capacity; Section 6.3
+states how far that was shown.
 
 ### 3.5 Offline operation
 
@@ -489,9 +496,12 @@ the device and replayed in order when the network returns. Replay safety is
 a direct corollary of the server's idempotent scan semantics described in
 Section 3.3: an entry that already reached the server resolves to a
 definitive duplicate answer rather than a second effect, so the queue can be
-drained without reconciliation logic. Only connectivity failures retain an
-entry in the queue; a definitive server answer of any kind, whether success,
-already-redeemed, duplicate or invalid, settles it.
+drained without reconciliation logic. A definitive business answer settles
+an entry: success, already redeemed or duplicate (409), invalid token (404),
+or not redeemable now (422). Anything else, including no connection, an
+expired login, rate limiting or a server fault, keeps that entry and every
+entry after it for the next attempt, and an entry queued while a replay is
+running is kept. The replay tests are listed in Section 6.1.
 
 ### 3.6 Analytics, notifications and reporting
 
@@ -504,8 +514,8 @@ voucher redemption progress as headline figures, with time-series charts
 beneath. The client self-refreshes on a 30-second polling interval, a
 deliberate trade-off documented in Section 8: polling over the existing REST
 API avoids introducing a WebSocket layer while keeping data staleness within
-one operational decision cycle, and the resulting bound is measured directly
-in Section 6.5.
+one operational decision cycle. Section 6.5 measures the resulting freshness
+by injecting check-ins and timing their appearance.
 
 Organisers compose notifications targeted at all attendees or at
 role-scoped groups. The dispatch service resolves the target set into
@@ -514,12 +524,16 @@ to every registered device token [10]. Because FCM delivery is best-effort
 [11], every notification is simultaneously persisted and served through an
 authenticated in-app inbox, so an attendee whose device was offline, or
 lacks Google Play services, still receives the message on next application
-open; the per-recipient records make delivery auditable.
+open; the inbox shows each user only the notifications they were a recipient
+of, and the per-recipient records make delivery auditable. Firebase demo
+mode, used to try the app without credentials, records a send as `demo` on
+the notification and every recipient, never as `sent`, so it cannot be
+mistaken for delivery.
 
 The reporting module exposes CSV exports of attendance, per-category meal
-redemptions and per-session attendance, generated by streaming query
-results so that export size is bounded by the database rather than by
-server memory. Export correctness is an explicit evaluation criterion,
+redemptions, per-session attendance and notifications to organisers. Each
+export is written while its rows are read from the database in chunks of
+1,000, so the whole export is never held in memory. Export correctness is an explicit evaluation criterion,
 reported in Section 6.6.
 
 ### 3.7 Tools and technologies
@@ -628,48 +642,64 @@ event, 500 attendees, three meal categories with a voucher issued per attendee
 per category for 1,500 vouchers in all, and ten sessions. Three categories
 rather than one because the single-use guarantee is held per (attendee,
 category): with one category nothing would distinguish it from a per-attendee
-guarantee, and the second project objective is redemption across several. It is driven through the live HTTP API by
-`tools/run-evaluation.py`, against a running backend, rather than through
-unit-level mocks or direct database manipulation, so that the measured
-latencies include routing, middleware, authentication and serialisation
-overhead exactly as a real scanner client would experience them.
+guarantee, and the second project objective is redemption across several.
+The proposal specified four categories for the simulated event; three were
+used, which is enough to test that redeeming one category leaves the others
+redeemable, and the proposal's targets are kept unchanged. The dataset is
+driven through the live HTTP API, against a running backend, rather than
+through unit-level mocks or direct database manipulation, so that the
+measured latencies include routing, middleware, authentication and
+serialisation overhead exactly as a real scanner client would experience
+them. Three scripts do this: `tools/run-evaluation.py` for correctness,
+latency and export correctness, `tools/run-concurrency-experiment.py` for
+redemption under parallel load, and `tools/measure-dashboard-freshness.py`
+for dashboard freshness.
 
 ### 5.2 Guarding against an artificially easy measurement
 
-Two design choices keep this evaluation from measuring only what the system
-was built to pass. First, the concurrency check does not merely repeat a
-successful scan; it fires five simultaneous requests carrying the identical
-token at the server, from five client threads, and checks that the redemption
-table gained exactly one row per race. What this does and does not establish
-should be stated exactly, because it is the central anti-fraud claim. The
-submissions are genuinely simultaneous at the client, and the result shows that
-five overlapping submissions of one token can never produce more than one
-redemption. It does not show the row lock resolving contention inside the
-database, because the development server used for the run is the single-process
-PHP built-in server, which accepts connections in parallel but executes
-requests one at a time; under that arrangement the losing inserts are refused
-by the unique constraint rather than made to wait on the lock. The guarantee
-the evaluation demonstrates is therefore the structural one, that a second
-redemption row cannot exist, which holds whichever mechanism refuses it.
-Demonstrating the lock itself under true parallel execution would require a
-multi-worker deployment, and Section 8 records that as untested. Second, the adversarial pass recorded in
-`docs/STRICT-REVIEW.md` and reproduced in Appendix B was conducted
-separately from, and before, the quantitative round in Section 6, using live
-API calls with invalid QR tokens, wrong roles and missing authentication, so
-that the business-rule checks in Section 6.1 are not the only line of
-defence being reported.
+Three design choices keep this evaluation from measuring only what the system
+was built to pass.
+
+First, the concurrency claim is tested by an experiment that can fail. A race
+test run on a server that executes one request at a time cannot tell a
+locked, constrained redemption apart from a plain check-then-insert, because
+the requests never overlap: every losing scan is refused by the ordinary
+status check. The first version of this evaluation had exactly that weakness.
+The concurrency experiment therefore runs five separate PHP server processes
+against PostgreSQL, sends each race's five scans to a different process at the
+same instant, and repeats the races with the row lock removed, with the unique
+constraint removed, and with both removed, each configuration served from a
+scratch copy of the same commit. The configuration with both removed is the
+negative control: if it also produced one redemption per race, the test would
+show nothing. A second run injects a 50 ms pause between the check and the
+write in every configuration, so the result does not depend on how often the
+natural timing happens to overlap.
+
+Second, freshness is measured by injecting check-ins and timing their
+appearance through a poller that reproduces the app's refresh cycle, rather
+than derived from the poll interval.
+
+Third, export correctness is checked against SQL run directly on the
+database, not against another API endpoint that could share a fault with the
+export, and on a total per export as well as on the row count.
+
+The adversarial pass recorded in `docs/STRICT-REVIEW.md` and reproduced in
+Appendix B was conducted separately from, and before, the quantitative round
+in Section 6, using live API calls with invalid QR tokens, wrong roles and
+missing authentication. It did not find the authorisation defects described in
+Section 6.1, which were found by the supervisor after submission.
 
 ### 5.3 Metrics and acceptance criteria
 
-Success criteria were fixed in the approved proposal (Table 3): 100% of
+Success criteria were set in the proposal's Table 3: 100% of
 duplicate scans rejected including concurrent submissions; median scan
 latency under 500 ms with a 95th percentile under 1 second; dashboard data
 no more than 30 seconds behind database state; a capacity warning delivered
 before a session reaches 100% occupancy; 95% or more of online devices
 receiving a push within 30 seconds, with 100% of recipients reachable via
 the in-app inbox on next open; and CSV export row counts and totals equal to
-database ground truth exactly. Each criterion is addressed by name in
-Section 6.
+database ground truth exactly; and a comparison with a manual baseline. Each
+criterion is given a status in Table 2 and addressed by name in Section 6.
 
 ## 6. Results
 
@@ -697,32 +727,85 @@ run.
 
 ### 6.1 Automated correctness verification
 
-The backend test suite passes in full: 55 tests, 213 assertions, on PHP
-8.5.8 with PostgreSQL 18. PHPStan at level 7 and Pint are both clean. The
-Flutter client is analyzer-clean with 19 of 19 tests passing. Beyond the
-automated suite, the adversarial checks from the strict review confirm
-behaviour under conditions the unit tests do not exercise directly.
+The backend test suite passes in full: 70 tests, 288 assertions, on PHP 8.5.8
+with PostgreSQL 18.2. Of those, 31 tests (152 assertions) in
+`tests/Feature/ConferenceApiTest.php` exercise this component; the other 39
+are the Laravel starter kit's example, dashboard, authentication and settings
+tests, which came with the application scaffold. The 31 are named in Section
+0.1 of the validation report. PHPStan at level 7 and Pint are both clean. The
+Flutter client is analyzer-clean with 27 of 27 tests passing.
+
+**Access control.** After submission the supervisor found that an
+authenticated attendee assigned to the event could read another attendee's
+voucher token, the attendance export, the event's redemption history and a
+notification addressed to organisers, on a local database with synthetic data.
+These were defects in the authorisation rules, contradicting what Section 3.1
+then claimed. They are fixed: an attendee can open only their own voucher,
+reports are organiser only, the redemption history, attendee list, voucher
+list and session attendance are staff only, and notifications are listed and
+opened only by their recipients. Four further defects of the same kind were
+fixed with them: registration let a caller choose the organiser role, any
+organiser could delete any user's device token, the `custom` notification
+target was sent to every attendee, and linking an attendee record to a scanner
+demoted them. Each fix has a test that expects 403 and that fails against the
+earlier code (validation report, Section 7).
+
+**Offline replay.** Two defects in the replay path were fixed: every HTTP
+error, including an expired login or a server fault, was treated as settled
+and the scan dropped; and a scan queued while a replay was running could be
+overwritten. Eight tests now drive the replay itself with a fake API,
+covering an authentication failure, a server fault, a scan queued during a
+replay, a queue left by an earlier app run, and a scan kept after a 401
+surviving a restart (validation report, Section 8). Camera decoding of QR
+codes was checked by hand and not measured; the only QR test covers the
+trimming of a manually entered token.
+
+Beyond the automated suite, the adversarial checks from the strict review
+confirmed behaviour under conditions the unit tests did not then exercise.
 
 **Table 3. Adversarial and live checks, strict review
 (`docs/STRICT-REVIEW.md`).**
 
 | Verification | Result |
 |---|---|
-| Live API exercise, all endpoint groups | all responded correctly, including 401/403 enforcement |
-| Double meal-voucher scan | rejected, by transaction plus `lockForUpdate` |
+| Live API exercise, all endpoint groups | all responded correctly, including 401/403 enforcement for the checks made |
+| Double meal-voucher scan | rejected |
 | Duplicate check-in / session scan | flagged `duplicate: true` / rejected |
 | Over-capacity session scan | recorded with `over_capacity`, warning, and an automatic organiser alert |
 | Notification send to `all_attendees` | recipient records created, per-recipient delivery status recorded |
-| Four CSV report downloads | all well-formed, row counts exact |
+| Four CSV report downloads | all well-formed |
 
 ### 6.2 Meal voucher redemption correctness
 
-The protocol in Section 3.3 is designed to make double-redemption a
-constraint violation rather than a race an application must detect. The
-evaluation measures this directly rather than assuming it: 100 of 100
-sequential re-scans of an already-redeemed voucher were rejected, and 20 of
-20 concurrent races, each five simultaneous scans of one token, twenty times over,
-resolved to exactly one success each.
+Sequentially, 100 of 100 re-scans of an already-redeemed voucher were refused.
+
+The evaluation script's own race step, 20 races of five simultaneous scans of
+one token, resolved to exactly one success each, but it ran on a development
+server that executes one request at a time, so it cannot distinguish the
+design from a plain check-then-insert and is not the evidence for the
+concurrency claim (Section 5.2). The evidence is the concurrency experiment,
+in which five separate server processes received each race's five scans at
+the same instant, 50 races per configuration (Table 4).
+
+**Table 4. Concurrent redemption on PostgreSQL behind five server processes,
+50 races of five simultaneous scans per configuration. Source:
+`tools/concurrency-results.json`.**
+
+| Row lock | Unique constraint | Races with one success | Vouchers redeemed more than once | With a 50 ms window: one success / redeemed more than once |
+|---|---|---|---|---|
+| on | on (as built) | 50/50 | 0 | 50/50 / 0 |
+| off | on | 50/50 | 0 | 50/50 / 0 |
+| on | off | 50/50 | 0 | 50/50 / 0 |
+| off | off | 2/50 | 48 | 0/50 / 50 |
+
+With both safeguards removed, 48 of 50 vouchers were redeemed more than once
+even without the injected pause, so the race is real under this load and the
+experiment can detect it. With either safeguard in place, every race produced
+exactly one redemption and no response was a server error. Each safeguard is
+therefore sufficient on its own, and the system as built carries both: with
+the lock in place, losing scans wait for the winner and are then refused by
+the status check; the unique constraint refuses the second insert if the lock
+is missing.
 
 The guarantee is held per (attendee, category) rather than per attendee, and
 that distinction is measured rather than assumed: twenty attendees were reserved
@@ -730,74 +813,89 @@ before any other step, each holding a voucher in all three categories, and each
 had all three redeemed in turn. All sixty redemptions were accepted and every
 repeat of the first was refused, so redeeming one category neither consumes nor
 blocks another. Ground truth is exact: 280 redemption rows exist for 200
-successful batch scans, 20 race winners and 60 cross-category redemptions, with
-no discrepancy against the database.
+successful batch scans, 20 race winners and 60 cross-category redemptions,
+equal to a direct SQL count.
 
 ### 6.3 Session attendance and capacity correctness
 
-The unique `(session, attendee)` constraint held under the same treatment:
-20 of 20 duplicate session check-ins were rejected. Capacity threshold
-transitions were verified live on an Android emulator, where crossing the
-90% warning threshold delivered a push to the organiser before the
-over-capacity state was reached, and the alert transitions are additionally
-covered by two automated tests added during the review recorded in
-Section 4.2.
+The unique `(session, attendee)` constraint held under the same sequential
+treatment: 20 of 20 duplicate session check-ins were refused. Session scans now
+lock the session row, and a scan that reaches the unique constraint returns
+409 rather than a server error; that path is tested by inserting a competing
+row between the check and the insert, but the session path was not part of
+the parallel experiment, so it has not been tested under real parallel load.
+Capacity threshold transitions are covered by an automated test and were
+observed once on an Android emulator, where crossing the 90% warning threshold
+delivered a push to the organiser before the over-capacity state was reached.
+The alert was not timed, so the criterion that the warning arrives before the
+session is full is shown, not measured.
 
 ### 6.4 Latency against the proposal's targets
 
-**Table 4. Latency by endpoint against the proposal's targets. Source:
+**Table 5. Latency by endpoint against the proposal's targets. Source:
 `tools/evaluation-results.json`.**
 
 | Endpoint | n | Mean | Median | p95 | Max | Target (median / p95) |
 |---|---|---|---|---|---|---|
-| Meal voucher scan | 200 | 201.9 ms | 187.5 ms | 286.7 ms | 347.0 ms | < 500 ms / < 1,000 ms |
-| Session scan | 40 | 186.4 ms | 174.5 ms | 266.5 ms | 292.8 ms | < 500 ms / < 1,000 ms |
-| Analytics summary | 20 | 214.5 ms | 211.6 ms | 282.6 ms | 292.4 ms | feeds the freshness bound in 6.5 |
+| Meal voucher scan | 200 | 164.0 ms | 145.3 ms | 261.0 ms | 316.6 ms | < 500 ms / < 1,000 ms |
+| Session scan | 40 | 143.3 ms | 128.4 ms | 228.7 ms | 242.1 ms | < 500 ms / < 1,000 ms |
+| Analytics summary | 20 | 124.0 ms | 117.9 ms | 138.7 ms | 208.2 ms | part of each dashboard refresh (Section 6.5) |
 
-Every measured latency clears its target with substantial margin against
-Nielsen's response-time threshold [8]. These figures are taken on a single
-local machine over loopback HTTP, not on venue-grade Wi-Fi as the proposal's
-target scenario assumes; Section 8 states what follows, and does not follow,
-from that difference.
+Every measured latency clears its target against Nielsen's response-time
+threshold [8]. These figures are taken on a single local machine over loopback
+HTTP, not on venue Wi-Fi as the proposal's target scenario assumes; Section 8
+states the spread across runs and what follows from the difference.
 
 ### 6.5 Analytics dashboard freshness
 
-Worst-case staleness is the poll interval plus the endpoint's own latency:
-30 s + 211.6 ms ≈ 30.2 s. Read as "at most one polling cycle plus negligible
-server time," this is within the proposal's target; read as a strict
-≤ 30.000 s bound it is not, and the honest statement is the former, because
-the 30-second figure was always the architectural parameter being tested,
-not a hard ceiling the system was separately trying to beat.
+Freshness was measured by injecting check-ins and timing their appearance, as
+the proposal's method describes. A poller reproducing the app's refresh, the
+same four endpoints fetched in parallel with the next refresh 30 seconds after
+the previous one started, ran while 20 check-ins were injected one at a time at
+random moments; each was timed from the start of the injecting request to the
+end of the first dashboard fetch that showed it. The median was 18.1 s, the
+95th percentile 28.4 s and the maximum 28.5 s, and all 20 appeared within
+30 s. This covers the data path to the app, not the time Flutter takes to
+repaint. By design the worst case is one full 30 s cycle plus the duration of
+a fetch, so a check-in landing just after a fetch starts can appear
+fractionally later than 30 s; none of the 20 random trials did, but the design
+does not guarantee a strict 30 s ceiling.
 
 ### 6.6 Export correctness
 
-**Table 5. Export correctness, CSV rows against database ground truth.
-Source: `tools/evaluation-results.json`.**
+**Table 6. Export correctness, each CSV export against SQL run directly on
+the database. Source: `tools/evaluation-results.json`.**
 
-| Export | CSV rows | Database ground truth | Match |
+| Export | Check | CSV | SQL |
 |---|---|---|---|
-| `meals.csv` | 280 | 280 redemptions | exact |
-| `attendance.csv` | 500 | 500 attendees | exact |
+| `attendance.csv` | rows / attendees checked in | 500 / 40 | 500 / 40 |
+| `meals.csv` | rows / redemptions per category | 280 / 94, 93, 93 | 280 / 94, 93, 93 |
+| `sessions.csv` | rows / attendance per session | 10 / equal for all ten | 10 / equal for all ten |
+| `notifications.csv` | rows / total recipients | 0 / 0 | 0 / 0 |
 
-Both exports match exactly because they are generated by streaming the same
-queries an analyst would run directly against the database, rather than
-through a separately maintained export code path that could drift from it.
+All four exports equal the database on their row count and on one total each.
+The evaluation event has no notifications, because sending one would have used
+live Firebase credentials, so the `notifications.csv` check compares zero with
+zero; that export's row count is tested on seeded data that does contain a
+notification. An earlier version of this check compared two exports with
+other API endpoints on row counts only, which could not have caught a fault
+shared between the export and those endpoints.
 
 ### 6.7 Notification delivery
 
-Live Firebase Cloud Messaging v1 delivery was verified end to end on an
-Android emulator: an organiser send travelled Laravel, through
-service-account OAuth, through FCM v1, to a real device's notification
-shade. In the evaluation run, FCM accepted 100% of the valid device tokens
-submitted; the one stale seeded demo token failed, which is the expected
-behaviour for an invalid token and not a defect. Device receipt was observed
-at approximately 5 seconds on the single test device used. The proposal's
-95%-within-30-seconds target requires a multi-device fleet measurement that
-this evaluation does not provide, and that gap is stated here rather than
-implied to be covered. Because delivery is best-effort by design [11], the
-in-app inbox gives 100% eventual delivery to any attendee who opens the
-application, independent of push reachability, which is the property the
-dual-channel design in Section 3.6 exists to guarantee.
+Live Firebase Cloud Messaging v1 delivery was observed once, end to end, on an
+Android emulator: an organiser send travelled from Laravel, through
+service-account OAuth and FCM v1, to the device's notification shade, and
+arrived about 5 seconds after sending. These are single observations, with the
+screenshot as evidence, and no run log of delivery across devices was
+committed. The proposal's target of 95% of online devices within 30 seconds
+therefore requires a measurement this evaluation does not provide. Delivery is
+recorded per recipient, a recipient being `sent` only when one of their own
+tokens was accepted, and a demo-mode send is recorded as `demo`, never `sent`.
+Because push delivery is best-effort by design [11], the in-app inbox is the
+channel that reaches every recipient who opens the application; that every
+recipient gets a record and that the inbox is filtered to recipients is
+tested, but it was not measured on devices.
 
 ### 6.8 Baseline comparison, and its limits
 
@@ -807,30 +905,42 @@ human-trial baseline was **not** conducted, because organising a staffed
 comparison exercise was not feasible within the project's scope, and this is
 stated plainly rather than approximated with an invented number, which would
 be worse than admitting the gap. What the evaluation does establish is the
-system-side bound: a median scan-to-decision time of 187.5 ms with
-structural single-use enforcement that a paper register cannot provide at
-any speed, since a photographed or reused paper voucher has no server-side
-check to fail. The qualitative contrast, that a register cannot reject a
-duplicate it does not notice while the system rejected 100% of 120
-attempted duplicate redemptions, follows from the results above alone. No
-published figure is available to compare it against: the closest prior work
-[3] proposes a QR attendance system without measuring one, so there is no
-external baseline in the literature to set these numbers beside.
+system-side bound: a median scan-to-decision time of 145.3 ms with
+single-use enforcement that a paper register cannot provide at any speed,
+since a photographed or reused paper voucher has no server-side check to
+fail. The evaluation run refused all 200 duplicate submissions it made: 100
+sequential re-scans, the 80 losing scans of the 20 single-server races, and 20
+cross-category repeats; in the concurrency experiment, every losing scan was
+refused in every configuration with a safeguard in place. No published figure
+is available to compare these against: the closest prior work [3] proposes a
+QR attendance system without measuring one, so there is no external baseline
+in the literature to set these numbers beside.
 
 ## 7. Discussion
 
-The central design argument tested by this evaluation is that carrying a
-correctness guarantee in a database constraint, rather than in application
-logic that checks for a condition before acting on it, eliminates an entire
-class of time-of-check-to-time-of-use bugs by construction. Section 6.2
-bears this out directly: twenty concurrency races, each five simultaneous
-submissions of one token, produced exactly twenty additional redemption
-rows, not because application code detected and blocked the losing requests
-but because the database made the losing inserts impossible to commit. The
-same property is what makes the offline scan queue in Section 3.5 safe
-without reconciliation logic, because an idempotent server means a queue can simply
-retry until it gets a definitive answer, whatever that answer is, rather
-than needing to reason about whether an earlier attempt already succeeded.
+The central design argument tested by this evaluation is that a correctness
+guarantee should not rest on application logic that checks for a condition
+before acting on it, because two requests can both pass the check before
+either acts. Table 4 shows that race happening: with the row lock and the
+unique constraint both removed, five simultaneous scans of one voucher
+produced more than one redemption in 48 of 50 races, although the status
+check was present throughout. It also shows that either database mechanism
+closes it on its own. The row lock does so by making the second request wait
+until the first has committed, so its status check sees the redemption; the
+unique constraint does so by refusing the second redemption row outright,
+whatever the application did before the insert. The system carries both, so
+that the guarantee does not depend on any one line of application code being
+right. The same property is what makes the offline scan queue in Section 3.5
+safe without reconciliation logic, because an idempotent server means a queue
+can simply retry until it gets a definitive answer, whatever that answer is,
+rather than needing to reason about whether an earlier attempt already
+succeeded.
+
+The first version of this evaluation did not show this. Its race test ran on a
+server that executes one request at a time, so every losing scan was refused
+by the status check and the test would have passed for a plain
+check-then-insert too. The lesson is a methodological one: a concurrency test
+needs a negative control that is expected to fail, or a pass means nothing.
 
 This design has a cost, which is schema rigidity: the guarantee lives in a
 unique constraint on `meal_redemptions`, so any future requirement to permit
@@ -838,13 +948,12 @@ a voucher to be redeemed more than once, for example a multi-serving meal
 category, is a schema change rather than a business-rule change, and that
 trade-off should be named rather than left implicit.
 
-The latency results in Section 6.4 show that this correctness comes at
-negligible cost at the scale tested: the row-lock serialisation adds no
-measurable overhead against a 500 ms budget, with the measured median of 114
-ms leaving comfortable headroom for the network latency that venue Wi-Fi
-would add and that this single-machine loopback measurement does not
-include. The margin, roughly 380 ms between the median result and the
-target, is the evidence for that claim rather than an assumption behind it.
+The latency results in Section 6.4 show that this correctness comes at an
+acceptable cost at the scale tested: the measured median voucher scan of
+145.3 ms leaves roughly 355 ms against the 500 ms target for the network
+latency that venue Wi-Fi would add and that this loopback measurement does
+not include. The cost of the lock itself was not measured separately: no run
+compared the endpoint with and without it.
 
 The relationship between this project's results and the closest prior work,
 Masalha and Hirzallah's QR attendance proposal [3], should be stated
@@ -857,8 +966,8 @@ report. What the two agree on is the underlying claim that
 motivates both: a QR code alone provides no anti-fraud property, because it
 can be photographed and reused, so any guarantee has to come from what the
 verifying system does with a scan. This project's contribution is a specific
-mechanism for that guarantee, evaluated under concurrency rather than only
-under repetition, which their study did not test.
+mechanism for that guarantee, evaluated under parallel load against a control
+rather than only under repetition, which their study did not test.
 
 ## 8. Limitations
 
@@ -867,41 +976,40 @@ event, scripted duplicate scans and single test devices approximate a real
 conference but do not reproduce its full operational variability: real
 network conditions, real device diversity, and real human queueing
 behaviour at a meal line. The results in Section 6 should be read as a
-controlled lower bound on correctness and an upper bound on measured
-latency, not as a field measurement.
+controlled measurement on synthetic data, not as a field measurement.
 
 **Measurements are single-machine and loopback.** All latency figures in
 Section 6.4 were taken on one development machine over loopback HTTP. Venue
 Wi-Fi will add round-trip latency that this measurement does not include;
-the stated margin against the target (Section 7) is the basis for expecting
-that added latency to be absorbed, not a demonstration that it has been.
+the margin against the target (Section 7) is the basis for expecting that
+added latency to be absorbed, not a demonstration that it has been.
 
-**The latency figures are a property of the run, not of the system.** Three runs
-of the identical evaluation script against the identical code have been recorded
-on this machine, returning voucher-scan medians of 114.0 ms, 199.0 ms and the
-187.5 ms reported in Section 6.4, with 95th percentiles of 210.5 ms, 304.3 ms
-and 286.7 ms. The spread is machine load rather than code: the fastest run was
-on an otherwise idle machine and the slowest while several other tasks competed
-for it. Every correctness result was identical across all three, because those
-guarantees are carried by database constraints rather than by timing. The
-envelope the latency claim should be read in is therefore a median between
-roughly 110 ms and 200 ms and a 95th percentile between roughly 210 ms and
-305 ms on a development machine, inside the proposal's 500 ms and 1,000 ms
-targets by a factor of at least three in every run observed, and no narrower
+**The latency figures are a property of the run, not of the system.** Four runs
+of the evaluation script have been recorded on this machine, returning
+voucher-scan medians of 114.0 ms, 199.0 ms, 187.5 ms and the 145.3 ms reported
+in Section 6.4, with 95th percentiles of 210.5 ms, 304.3 ms, 286.7 ms and
+261.0 ms. The spread is machine load rather than code. Every correctness result
+was identical across runs. The envelope the latency claim should be read in is
+therefore a median between roughly 110 ms and 200 ms and a 95th percentile
+between roughly 210 ms and 305 ms on a development machine, inside the
+proposal's 500 ms and 1,000 ms targets in every run observed, and no narrower
 claim than that is supported by a single-machine measurement.
 
-**Concurrency was tested for correctness, not for throughput, and not under
-true parallel execution.** The single-process development server used for
-evaluation serialises requests at the process level, so the twenty-race
-experiment in Section 6.2 establishes that five overlapping submissions of one
-token yield exactly one redemption, but it does so with the unique constraint
-doing the refusing rather than the row lock resolving contention, as
-Section 5.2 sets out. Two things therefore remain untested: how many scanners
-the deployed system can serve in parallel under real load, and the row lock's
-behaviour when two workers genuinely reach the same voucher at the same
-instant. Both need a production-configured multi-worker deployment. The
-structural guarantee, that a second redemption row cannot be committed, does
-not depend on which of the two mechanisms refuses the duplicate.
+**Concurrency was tested for correctness, not throughput, and for meal
+vouchers only.** The concurrency experiment establishes that the redemption
+path gives one redemption per voucher under parallel load, and which
+mechanism is responsible. It does not establish how many scanners the system
+can serve at once, and it ran on five PHP built-in server processes on one
+machine rather than on a production server. The session scan path has the
+same kind of lock and constraint, but it was tested for a lost race only by
+fault injection in a unit test, not under parallel load.
+
+**Some criteria were shown rather than measured.** Capacity alerts were
+observed once on an emulator and covered by an automated test, but not timed.
+Push delivery was observed once, at about 5 seconds, on one device; the
+proposal's 95%-within-30-seconds target is a fleet-level claim this evaluation
+cannot support. Camera decoding of QR codes was checked by hand. Offline replay
+was tested against a fake API in the test harness, not on a device.
 
 **No live human-staffed baseline.** As stated in Section 6.8, the proposal's
 manual-register comparison was not run. The qualitative argument in that
@@ -909,11 +1017,16 @@ section follows from the system's measured properties and from prior
 literature on a different deployment, not from a controlled comparison
 conducted in this project.
 
-**Push delivery timing is single-device.** The approximately 5-second
-receipt time reported in Section 6.7 was observed on one Android emulator
-instance. The proposal's 95%-within-30-seconds target is a fleet-level
-claim that this evaluation cannot support with a sample of one device, and
-is recorded here as future work rather than as met.
+**Integration with component 4.3a was not demonstrated.** This component was
+built and tested against its own minimal check-in stub, as agreed, and against
+seeded check-in data. Running it against component 4.3a's own API is future
+work.
+
+**Deployment hardening is out of scope.** The development build talks to a
+local server over plain HTTP; the API login is not rate-limited and access
+tokens do not expire; and organiser and scanner accounts can only be created by
+the seed, since registration always creates an attendee. Each would need
+attention before the system handled real attendee data.
 
 **iOS is unverified.** Development and testing targeted Android; iOS
 compatibility is expected from Flutter's cross-platform model [19] but was
@@ -933,10 +1046,10 @@ direct consequence of the same idempotent design that protects the
 redemption protocol. Table 2 gives the status of each criterion in the
 proposal's Table 3:
 four are met, one of them on loopback only, two are partly met, fleet-scale
-push delivery was not measured and the manual baseline was not run. Table 6
+push delivery was not measured and the manual baseline was not run. Table 7
 states where each objective stands.
 
-**Table 6. Status of each objective (Section 1.3).**
+**Table 7. Status of each objective (Section 1.3).**
 
 | Objective | Status | Evidence |
 |---|---|---|
@@ -1107,10 +1220,10 @@ produced by `tools/run-evaluation.py` against the dataset seeded by
 {
   "voucher_scan_latency": {
     "n": 200,
-    "mean_ms": 201.9,
-    "median_ms": 187.5,
-    "p95_ms": 286.7,
-    "max_ms": 347.0
+    "mean_ms": 164.0,
+    "median_ms": 145.3,
+    "p95_ms": 261.0,
+    "max_ms": 316.6
   },
   "voucher_scan_success": 200,
   "sequential_duplicate_rejection": {
@@ -1129,10 +1242,10 @@ produced by `tools/run-evaluation.py` against the dataset seeded by
   },
   "session_scan_latency": {
     "n": 40,
-    "mean_ms": 186.4,
-    "median_ms": 174.5,
-    "p95_ms": 266.5,
-    "max_ms": 292.8
+    "mean_ms": 143.3,
+    "median_ms": 128.4,
+    "p95_ms": 228.7,
+    "max_ms": 242.1
   },
   "session_duplicate_rejection": {
     "attempts": 20,
@@ -1140,21 +1253,99 @@ produced by `tools/run-evaluation.py` against the dataset seeded by
   },
   "analytics_summary_latency": {
     "n": 20,
-    "mean_ms": 214.5,
-    "median_ms": 211.6,
-    "p95_ms": 282.6,
-    "max_ms": 292.4
+    "mean_ms": 124.0,
+    "median_ms": 117.9,
+    "p95_ms": 138.7,
+    "max_ms": 208.2
   },
   "export_correctness": {
-    "meals_csv_rows": 280,
-    "db_redemptions": 280,
-    "match": true,
-    "attendance_csv_rows": 500,
-    "db_attendees": 500,
-    "attendance_match": true
+    "attendance.csv": {
+      "rows": {
+        "csv": 500,
+        "sql": 500,
+        "match": true
+      },
+      "checked_in": {
+        "csv": 40,
+        "sql": 40,
+        "match": true
+      }
+    },
+    "meals.csv": {
+      "rows": {
+        "csv": 280,
+        "sql": 280,
+        "match": true
+      },
+      "per_category": {
+        "csv": {
+          "Evaluation Breakfast": 94,
+          "Evaluation Lunch": 93,
+          "Evaluation Supper": 93
+        },
+        "sql": {
+          "Evaluation Breakfast": 94,
+          "Evaluation Lunch": 93,
+          "Evaluation Supper": 93
+        },
+        "match": true
+      }
+    },
+    "sessions.csv": {
+      "rows": {
+        "csv": 10,
+        "sql": 10,
+        "match": true
+      },
+      "attendance_per_session": {
+        "csv": {
+          "Evaluation Session 1": 40,
+          "Evaluation Session 10": 0,
+          "Evaluation Session 2": 0,
+          "Evaluation Session 3": 0,
+          "Evaluation Session 4": 0,
+          "Evaluation Session 5": 0,
+          "Evaluation Session 6": 0,
+          "Evaluation Session 7": 0,
+          "Evaluation Session 8": 0,
+          "Evaluation Session 9": 0
+        },
+        "sql": {
+          "Evaluation Session 1": 40,
+          "Evaluation Session 10": 0,
+          "Evaluation Session 2": 0,
+          "Evaluation Session 3": 0,
+          "Evaluation Session 4": 0,
+          "Evaluation Session 5": 0,
+          "Evaluation Session 6": 0,
+          "Evaluation Session 7": 0,
+          "Evaluation Session 8": 0,
+          "Evaluation Session 9": 0
+        },
+        "match": true
+      }
+    },
+    "notifications.csv": {
+      "rows": {
+        "csv": 0,
+        "sql": 0,
+        "match": true
+      },
+      "recipients": {
+        "csv": 0,
+        "sql": 0,
+        "match": true
+      }
+    },
+    "all_match": true
   }
 }
 ```
+
+The concurrency experiment and the freshness measurement write their own
+files, `tools/concurrency-results.json` and `tools/freshness-results.json`;
+their figures are in Tables 4 and 2, and the freshness file lists all 20
+measured delays.
 
 ## Appendix D. Reproduction commands
 
@@ -1168,8 +1359,8 @@ the database and none of these commands will run. PostgreSQL 18.2. Python
 3.14.0 and pandoc 3.9.0.1 for the document build, with Microsoft Word 16.0,
 which `tools/paginate_report.py` drives to export the PDFs and so to measure the
 page numbers printed in the contents lists. The Python packages the document
-build imports are pinned in `tools/requirements-docs.txt`; the evaluation runner
-imports only the standard library.
+build imports are pinned in `tools/requirements-docs.txt`; the evaluation
+scripts import only the standard library.
 
 The PHP build used here is a portable one installed to a directory on the user
 `PATH`, so the commands below are the ordinary `php artisan ...` a reader would
@@ -1186,11 +1377,20 @@ Full evaluation round, against a local backend:
 php artisan serve
 php artisan tinker tools/seed-evaluation-event.php
 python tools/run-evaluation.py
+python tools/measure-dashboard-freshness.py
 ```
 
-This regenerates `tools/evaluation-results.json` from the seeded dataset, and
-overwrites the recorded run in doing so; the figures in Section 6 come from the
-run committed in that file, and Section 8 states the spread observed between
+The concurrency experiment, which needs PostgreSQL as configured in `.env` and
+creates and drops its own scratch database, so no server needs to be running:
+
+```
+python tools/run-concurrency-experiment.py
+```
+
+These regenerate `tools/evaluation-results.json`,
+`tools/freshness-results.json` and `tools/concurrency-results.json`, and
+overwrite the recorded runs in doing so; the figures in Section 6 come from the
+runs committed in those files, and Section 8 states the spread observed between
 runs.
 
 Backend test suite:
@@ -1234,7 +1434,7 @@ contents, tables and figures lists no longer match the rendered documents.
 Validated state, and the commit it resolves to:
 
 ```bash
-git rev-list -n1 milestone-12-final-submission
+git rev-list -n1 final-resubmission
 ```
 
 ## Appendix E. The running system, against each objective
