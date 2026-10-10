@@ -58,7 +58,7 @@ void main() {
     expect(await queue.count(), 2);
   });
 
-  test('replaceAll keeps only the scans that are still pending', () async {
+  test('settle keeps only the scans that are still pending', () async {
     final queue = ScanQueue();
     final first = QueuedScan(
       type: QueuedScan.meal,
@@ -75,7 +75,7 @@ void main() {
     await queue.enqueue(first);
     await queue.enqueue(second);
 
-    await queue.replaceAll([second]);
+    await queue.settle(2, [second]);
 
     final pending = await queue.pending();
     expect(pending, hasLength(1));

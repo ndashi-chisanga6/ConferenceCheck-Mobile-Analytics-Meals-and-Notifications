@@ -77,7 +77,7 @@ class ScanSyncController extends Notifier<ScanSyncState> {
       }
     }
 
-    await queue.replaceAll(remaining);
+    await queue.settle(items.length, remaining);
     ref.invalidate(pendingScanCountProvider);
 
     final parts = <String>[
@@ -92,6 +92,4 @@ class ScanSyncController extends Notifier<ScanSyncState> {
 }
 
 final scanSyncControllerProvider =
-    NotifierProvider<ScanSyncController, ScanSyncState>(
-      ScanSyncController.new,
-    );
+    NotifierProvider<ScanSyncController, ScanSyncState>(ScanSyncController.new);
