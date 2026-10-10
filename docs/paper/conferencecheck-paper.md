@@ -49,82 +49,83 @@ report does not re-derive figures independently of it.
 |  | Conventions used in this report | 1 |
 |  | Abstract | 4 |
 | 1 | **Introduction** | 5 |
-| 1.1 | Problem statement | 5 |
+| 1.1 | Problem statement | 6 |
 | 1.2 | Aim | 6 |
 | 1.3 | Objectives | 6 |
 | 1.4 | Scope | 6 |
-| 1.5 | Contributions | 6 |
+| 1.5 | Contributions | 7 |
 | 2 | **Literature Review** | 7 |
-| 3 | **Methodology** | 9 |
-| 3.1 | System architecture and the component 4.3a / 4.3b boundary | 9 |
-| 3.2 | Data model and integrity guarantees | 10 |
-| 3.3 | The voucher redemption protocol | 10 |
-| 3.4 | Session attendance and capacity alerting | 11 |
-| 3.5 | Offline operation | 11 |
-| 3.6 | Analytics, notifications and reporting | 11 |
-| 3.7 | Tools and technologies | 12 |
-| 3.8 | Ethical considerations and AI usage disclosure | 12 |
-| 4 | **Implementation** | 12 |
-| 4.1 | Code organisation | 12 |
-| 4.2 | Defects found and fixed during review | 13 |
-| 5 | **Evaluation Methodology** | 13 |
-| 5.1 | Seeded evaluation dataset | 14 |
-| 5.2 | Guarding against an artificially easy measurement | 14 |
-| 5.3 | Metrics and acceptance criteria | 14 |
-| 6 | **Results** | 15 |
-| 6.1 | Automated correctness verification | 15 |
-| 6.2 | Meal voucher redemption correctness | 16 |
-| 6.3 | Session attendance and capacity correctness | 16 |
-| 6.4 | Latency against the proposal's targets | 16 |
-| 6.5 | Analytics dashboard freshness | 17 |
-| 6.6 | Export correctness | 17 |
-| 6.7 | Notification delivery | 17 |
-| 6.8 | Baseline comparison, and its limits | 17 |
-| 7 | **Discussion** | 18 |
-| 8 | **Limitations** | 19 |
-| 9 | **Conclusion** | 20 |
-|  | References | 20 |
-| A | **Appendix A. Artificial intelligence usage disclosure** | 21 |
-| A.1 | Purpose and scope | 21 |
-| A.2 | Tools and scope of assistance, as bounded by the proposal | 22 |
-| A.3 | Validation of AI-assisted output | 22 |
-| A.4 | Honest statement of disclosure limitations | 22 |
-| B | **Appendix B. Defects found and fixed during the strict review** | 22 |
-| C | **Appendix C. Full evaluation figures** | 24 |
-| D | **Appendix D. Reproduction commands** | 25 |
-| E | **Appendix E. The running system, against each objective** | 26 |
-| E.1 | What these figures do and do not show | 35 |
-| F | **Appendix F. Reference verification record** | 36 |
+| 3 | **Methodology** | 10 |
+| 3.1 | System architecture and the component 4.3a / 4.3b boundary | 10 |
+| 3.2 | Data model and integrity guarantees | 11 |
+| 3.3 | The voucher redemption protocol | 11 |
+| 3.4 | Session attendance and capacity alerting | 12 |
+| 3.5 | Offline operation | 12 |
+| 3.6 | Analytics, notifications and reporting | 12 |
+| 3.7 | Tools and technologies | 13 |
+| 3.8 | Ethical considerations and AI usage disclosure | 13 |
+| 4 | **Implementation** | 13 |
+| 4.1 | Code organisation | 13 |
+| 4.2 | Defects found and fixed during review | 14 |
+| 5 | **Evaluation Methodology** | 15 |
+| 5.1 | Seeded evaluation dataset | 15 |
+| 5.2 | Guarding against an artificially easy measurement | 15 |
+| 5.3 | Metrics and acceptance criteria | 16 |
+| 6 | **Results** | 16 |
+| 6.1 | Automated correctness verification | 18 |
+| 6.2 | Meal voucher redemption correctness | 19 |
+| 6.3 | Session attendance and capacity correctness | 19 |
+| 6.4 | Latency against the proposal's targets | 20 |
+| 6.5 | Analytics dashboard freshness | 20 |
+| 6.6 | Export correctness | 20 |
+| 6.7 | Notification delivery | 21 |
+| 6.8 | Baseline comparison, and its limits | 21 |
+| 7 | **Discussion** | 22 |
+| 8 | **Limitations** | 23 |
+| 9 | **Conclusion** | 24 |
+|  | References | 25 |
+| A | **Appendix A. Artificial intelligence usage disclosure** | 27 |
+| A.1 | Purpose and scope | 27 |
+| A.2 | Before the supervisor's comments (to 30 September 2026) | 27 |
+| A.3 | After the supervisor's comments (7 to 10 October 2026) | 27 |
+| A.4 | Validation of AI-assisted output | 28 |
+| A.5 | Honest statement of disclosure limitations | 28 |
+| B | **Appendix B. Defects found and fixed during the strict review** | 28 |
+| C | **Appendix C. Full evaluation figures** | 29 |
+| D | **Appendix D. Reproduction commands** | 32 |
+| E | **Appendix E. The running system, against each objective** | 34 |
+| E.1 | What these figures do and do not show | 42 |
+| F | **Appendix F. Reference verification record** | 43 |
 
 ## List of Tables
 
 | Table | Title | Section | Page |
 |---|---|---|---|
-| 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 10 |
-| 2 | Status of each acceptance criterion in the proposal's Table 3 | 6 | 15 |
-| 3 | Adversarial and live checks, strict review | 6.1 | 15 |
-| 4 | Concurrent redemption on PostgreSQL behind five server processes | 6.2 | 16 |
-| 5 | Latency by endpoint against the proposal's targets | 6.4 | 16 |
-| 6 | Export correctness, each CSV export against SQL run directly on the database | 6.6 | 17 |
-| 7 | Status of each objective | 9 | 20 |
-| B1 | Defects found during review and their fixes | B | 23 |
-| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 24 |
-| F1 | Verification of every reference, including the one withdrawn | F | 36 |
+| 1 | Core relations and the integrity constraints underpinning system guarantees | 3.2 | 11 |
+| 2 | Status of each acceptance criterion in the proposal's Table 3 | 6 | 16 |
+| 3 | Adversarial and live checks, strict review | 6.1 | 18 |
+| 4 | Concurrent redemption on PostgreSQL behind five server processes | 6.2 | 19 |
+| 5 | Latency by endpoint against the proposal's targets | 6.4 | 20 |
+| 6 | Export correctness, each CSV export against SQL run directly on the database | 6.6 | 20 |
+| 7 | Status of each objective | 9 | 24 |
+| B1 | Defects found during review and their fixes | B | 28 |
+| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 29 |
+| F1 | Verification of every reference, including the one withdrawn | F | 43 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
-| 1 | System architecture and the component 4.3a / 4.3b boundary | 3.1 | 9 |
-| 2 | Organiser analytics dashboard | E | 27 |
-| 3 | Trends and per-category redemption | E | 28 |
-| 4 | Automatic capacity alerts on a device | E | 29 |
-| 5 | Organiser broadcast delivered end to end | E | 30 |
-| 6 | Attendee pass with a server-issued token | E | 31 |
-| 7 | Meal categories and the per-device redemption trail | E | 32 |
-| 8 | Scanner accepting a voucher | E | 33 |
-| 9 | The same voucher refused on a second attempt | E | 34 |
-| 10 | Report exports available to an organiser | E | 35 |
+| 1 | System architecture and the component 4.3a / 4.3b boundary | 3.1 | 10 |
+| 2 | Organiser analytics dashboard | E | 34 |
+| 3 | Trends and per-category redemption | E | 35 |
+| 4 | Automatic capacity alerts on a device | E | 36 |
+| 5 | Organiser broadcast delivered end to end | E | 37 |
+| 6 | Attendee pass with a server-issued token | E | 38 |
+| 7 | Meal categories and the per-device redemption trail | E | 39 |
+| 8 | Scanner accepting a voucher | E | 40 |
+| 9 | The same voucher refused on a second attempt | E | 41 |
+| 10 | Report exports available to an organiser | E | 42 |
 
 
 ## Abstract

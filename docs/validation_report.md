@@ -32,19 +32,19 @@ runs on a local PHP 8.5.8 / PostgreSQL 18.2 stack on 10 October 2026.
 | Section | Subject | Page |
 |---|---|---|
 | 0 | Headline results | 2 |
-| 0.1 | Auditable evidence | 2 |
-| 1 | Meal voucher redemption correctness | 4 |
-| 2 | Session attendance and capacity correctness | 5 |
-| 3 | Latency against the proposal's targets | 5 |
-| 4 | Analytics dashboard freshness | 6 |
-| 5 | Export correctness | 6 |
-| 6 | Notification delivery | 7 |
-| 7 | Access control | 7 |
-| 8 | Offline replay | 8 |
-| 9 | Baseline comparison, and its limits | 8 |
-| 10 | Reproducibility | 9 |
-| 10.1 | The environment these commands assume | 9 |
-| 10.2 | Commands | 9 |
+| 0.1 | Auditable evidence | 3 |
+| 1 | Meal voucher redemption correctness | 5 |
+| 2 | Session attendance and capacity correctness | 7 |
+| 3 | Latency against the proposal's targets | 7 |
+| 4 | Analytics dashboard freshness | 8 |
+| 5 | Export correctness | 9 |
+| 6 | Notification delivery | 9 |
+| 7 | Access control | 10 |
+| 8 | Offline replay | 11 |
+| 9 | Baseline comparison, and its limits | 12 |
+| 10 | Reproducibility | 13 |
+| 10.1 | The environment these commands assume | 13 |
+| 10.2 | Commands | 13 |
 
 ## 0. Headline results
 
