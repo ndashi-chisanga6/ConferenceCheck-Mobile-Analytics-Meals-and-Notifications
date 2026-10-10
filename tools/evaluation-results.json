@@ -1,10 +1,10 @@
 {
   "voucher_scan_latency": {
     "n": 200,
-    "mean_ms": 201.9,
-    "median_ms": 187.5,
-    "p95_ms": 286.7,
-    "max_ms": 347.0
+    "mean_ms": 164.0,
+    "median_ms": 145.3,
+    "p95_ms": 261.0,
+    "max_ms": 316.6
   },
   "voucher_scan_success": 200,
   "sequential_duplicate_rejection": {
@@ -23,10 +23,10 @@
   },
   "session_scan_latency": {
     "n": 40,
-    "mean_ms": 186.4,
-    "median_ms": 174.5,
-    "p95_ms": 266.5,
-    "max_ms": 292.8
+    "mean_ms": 143.3,
+    "median_ms": 128.4,
+    "p95_ms": 228.7,
+    "max_ms": 242.1
   },
   "session_duplicate_rejection": {
     "attempts": 20,
@@ -34,17 +34,90 @@
   },
   "analytics_summary_latency": {
     "n": 20,
-    "mean_ms": 214.5,
-    "median_ms": 211.6,
-    "p95_ms": 282.6,
-    "max_ms": 292.4
+    "mean_ms": 124.0,
+    "median_ms": 117.9,
+    "p95_ms": 138.7,
+    "max_ms": 208.2
   },
   "export_correctness": {
-    "meals_csv_rows": 280,
-    "db_redemptions": 280,
-    "match": true,
-    "attendance_csv_rows": 500,
-    "db_attendees": 500,
-    "attendance_match": true
+    "attendance.csv": {
+      "rows": {
+        "csv": 500,
+        "sql": 500,
+        "match": true
+      },
+      "checked_in": {
+        "csv": 40,
+        "sql": 40,
+        "match": true
+      }
+    },
+    "meals.csv": {
+      "rows": {
+        "csv": 280,
+        "sql": 280,
+        "match": true
+      },
+      "per_category": {
+        "csv": {
+          "Evaluation Breakfast": 94,
+          "Evaluation Lunch": 93,
+          "Evaluation Supper": 93
+        },
+        "sql": {
+          "Evaluation Breakfast": 94,
+          "Evaluation Lunch": 93,
+          "Evaluation Supper": 93
+        },
+        "match": true
+      }
+    },
+    "sessions.csv": {
+      "rows": {
+        "csv": 10,
+        "sql": 10,
+        "match": true
+      },
+      "attendance_per_session": {
+        "csv": {
+          "Evaluation Session 1": 40,
+          "Evaluation Session 10": 0,
+          "Evaluation Session 2": 0,
+          "Evaluation Session 3": 0,
+          "Evaluation Session 4": 0,
+          "Evaluation Session 5": 0,
+          "Evaluation Session 6": 0,
+          "Evaluation Session 7": 0,
+          "Evaluation Session 8": 0,
+          "Evaluation Session 9": 0
+        },
+        "sql": {
+          "Evaluation Session 1": 40,
+          "Evaluation Session 10": 0,
+          "Evaluation Session 2": 0,
+          "Evaluation Session 3": 0,
+          "Evaluation Session 4": 0,
+          "Evaluation Session 5": 0,
+          "Evaluation Session 6": 0,
+          "Evaluation Session 7": 0,
+          "Evaluation Session 8": 0,
+          "Evaluation Session 9": 0
+        },
+        "match": true
+      }
+    },
+    "notifications.csv": {
+      "rows": {
+        "csv": 0,
+        "sql": 0,
+        "match": true
+      },
+      "recipients": {
+        "csv": 0,
+        "sql": 0,
+        "match": true
+      }
+    },
+    "all_match": true
   }
 }

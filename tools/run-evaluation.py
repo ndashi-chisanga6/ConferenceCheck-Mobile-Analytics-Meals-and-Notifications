@@ -9,7 +9,7 @@ against a seeded 500-attendee event (tools/seed-evaluation-event.php):
   4. Cross-category independence (redeeming one category leaves the others)
   5. Session scan latency and duplicate rejection
   6. Analytics endpoint latency (dashboard freshness bound)
-  7. CSV export correctness vs. database ground truth
+  7. CSV export correctness: all four exports against direct SQL (rows and totals)
 
 Usage:  python tools/run-evaluation.py  (backend must be running)
 Writes: tools/evaluation-results.json
@@ -19,12 +19,19 @@ import concurrent.futures
 import csv
 import io
 import json
+import os
 import statistics
+import subprocess
 import time
 import urllib.request
+from collections import Counter
+from pathlib import Path
 
 BASE = 'http://127.0.0.1:8000/api'
 EVENT_NAME = 'Evaluation Simulated Event'
+ROOT = Path(__file__).resolve().parent.parent
+bundled = ROOT.parent / '.tools' / 'php-8.5.8' / 'php.exe'
+PHP = os.environ.get('PHP') or (str(bundled) if bundled.exists() else 'php')
 
 
 def call(method, path, token=None, body=None, raw=False):
@@ -48,6 +55,14 @@ def call(method, path, token=None, body=None, raw=False):
     if raw:
         return status, payload, elapsed_ms
     return status, json.loads(payload), elapsed_ms
+
+
+def sql(statement):
+    """Runs a read-only query on the application's database through artisan,
+    so the ground truth comes from the database rather than from the API."""
+    result = subprocess.run([PHP, 'artisan', 'tinker', '--execute', f'echo json_encode(DB::select("{statement}"));'],
+                            cwd=ROOT, capture_output=True, text=True, check=True)
+    return json.loads(result.stdout)
 
 
 def pct(values, p):
@@ -190,6 +205,11 @@ session_dupes = sum(
     if call('POST', f'/events/{eid}/sessions/{session_id}/scan', scanner, {'attendee_id': aid})[0] == 409
 )
 results['session_duplicate_rejection'] = {'attempts': 20, 'rejected': session_dupes}
+
+# the same 40 attendees are checked in to the event, so the attendance export
+# check below compares a real checked-in total rather than zero
+for aid in attendee_ids:
+    call('POST', f'/events/{eid}/attendees/{aid}/check-in', scanner)
 print('session scan latency', results['session_scan_latency'], '| dupes rejected', session_dupes, '/ 20')
 
 # --- 6. analytics endpoint latency ----------------------------------------
@@ -201,19 +221,55 @@ results['analytics_summary_latency'] = summarise(analytics_lat)
 print('analytics latency', results['analytics_summary_latency'])
 
 # --- 7. export correctness -------------------------------------------------
-status, meals_csv, _ = call('GET', f'/events/{eid}/reports/meals.csv', organiser, raw=True)
-csv_rows = len(list(csv.reader(io.StringIO(meals_csv.decode())))) - 1  # minus header
-_, redemptions, _ = call('GET', f'/events/{eid}/meal-redemptions', organiser)
-db_rows = len(redemptions['data'])
-results['export_correctness'] = {'meals_csv_rows': csv_rows, 'db_redemptions': db_rows, 'match': csv_rows == db_rows}
-print('meals.csv rows', csv_rows, 'vs db redemptions', db_rows)
+# Each export is checked against SQL run directly on the database, not
+# against another API endpoint, on its row count and on a total per export.
 
-status, att_csv, _ = call('GET', f'/events/{eid}/reports/attendance.csv', organiser, raw=True)
-att_rows = len(list(csv.reader(io.StringIO(att_csv.decode())))) - 1
-results['export_correctness']['attendance_csv_rows'] = att_rows
-results['export_correctness']['db_attendees'] = len(attendees['data'])
-results['export_correctness']['attendance_match'] = att_rows == len(attendees['data'])
-print('attendance.csv rows', att_rows, 'vs attendees', len(attendees['data']))
+
+def export(name):
+    _, payload, _ = call('GET', f'/events/{eid}/reports/{name}', organiser, raw=True)
+    return list(csv.DictReader(io.StringIO(payload.decode())))
+
+
+def check(name, csv_values, sql_values):
+    match = csv_values == sql_values
+    print(f'{name:<34} csv {csv_values}  sql {sql_values}  {"match" if match else "MISMATCH"}')
+    return {'csv': csv_values, 'sql': sql_values, 'match': match}
+
+
+attendance_rows = export('attendance.csv')
+meal_rows = export('meals.csv')
+session_rows = export('sessions.csv')
+notification_rows = export('notifications.csv')
+
+results['export_correctness'] = {
+    'attendance.csv': {
+        'rows': check('attendance.csv rows', len(attendance_rows),
+                      sql(f'select count(*) as n from attendees where event_id = {eid}')[0]['n']),
+        'checked_in': check('attendance.csv checked in', sum(1 for r in attendance_rows if r['Checked In At']),
+                            sql(f'select count(*) as n from attendees where event_id = {eid} and checked_in_at is not null')[0]['n']),
+    },
+    'meals.csv': {
+        'rows': check('meals.csv rows', len(meal_rows),
+                      sql(f'select count(*) as n from meal_redemptions where event_id = {eid}')[0]['n']),
+        'per_category': check('meals.csv per category', dict(sorted(Counter(r['Meal Category'] for r in meal_rows).items())),
+                              {r['name']: r['n'] for r in sql(f'select c.name, count(*) as n from meal_redemptions m join meal_categories c on c.id = m.meal_category_id where m.event_id = {eid} group by c.name order by c.name')}),
+    },
+    'sessions.csv': {
+        'rows': check('sessions.csv rows', len(session_rows),
+                      sql(f'select count(*) as n from event_sessions where event_id = {eid}')[0]['n']),
+        'attendance_per_session': check('sessions.csv attendance', dict(sorted((r['Title'], int(r['Attendance'])) for r in session_rows)),
+                                        {r['title']: r['n'] for r in sql(f'select s.title, count(a.id) as n from event_sessions s left join session_attendance a on a.session_id = s.id where s.event_id = {eid} group by s.title order by s.title')}),
+    },
+    'notifications.csv': {
+        'rows': check('notifications.csv rows', len(notification_rows),
+                      sql(f'select count(*) as n from notifications where event_id = {eid}')[0]['n']),
+        'recipients': check('notifications.csv recipients', sum(int(r['Recipients']) for r in notification_rows),
+                            sql(f'select count(*) as n from notification_recipients r join notifications n on n.id = r.notification_id where n.event_id = {eid}')[0]['n']),
+    },
+}
+results['export_correctness']['all_match'] = all(
+    check_result['match'] for checks in results['export_correctness'].values() for check_result in checks.values()
+)
 
 with open('tools/evaluation-results.json', 'w') as fh:
     json.dump(results, fh, indent=2)
