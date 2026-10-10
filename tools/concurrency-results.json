@@ -1,0 +1,98 @@
+{
+  "setup": {
+    "commit": "33d3c89",
+    "workers": 5,
+    "races_per_configuration": 50,
+    "server": "5 separate php -S processes, one request per process per race",
+    "widened_window_delay_ms": 50,
+    "database": "PostgreSQL 18.2 on x86_64-windows, compiled by msvc-19.44.35222, 64-bit (scratch database, fresh seed)",
+    "php": "8.5.8",
+    "os": "Windows-11-10.0.26200-SP0"
+  },
+  "results": {
+    "natural": {
+      "lock_on_constraint_on": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_off_constraint_on": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_on_constraint_off": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_off_constraint_off": {
+        "races": 50,
+        "exactly_one_success": 2,
+        "vouchers_redeemed_more_than_once": 48,
+        "redemption_rows": 190,
+        "responses": {
+          "200": 190,
+          "409": 60
+        }
+      }
+    },
+    "widened": {
+      "lock_on_constraint_on": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_off_constraint_on": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_on_constraint_off": {
+        "races": 50,
+        "exactly_one_success": 50,
+        "vouchers_redeemed_more_than_once": 0,
+        "redemption_rows": 50,
+        "responses": {
+          "200": 50,
+          "409": 200
+        }
+      },
+      "lock_off_constraint_off": {
+        "races": 50,
+        "exactly_one_success": 0,
+        "vouchers_redeemed_more_than_once": 50,
+        "redemption_rows": 236,
+        "responses": {
+          "200": 236,
+          "409": 14
+        }
+      }
+    }
+  }
+}

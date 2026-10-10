@@ -17,12 +17,16 @@ use App\Models\Event;
 use App\Models\MealCategory;
 use App\Models\MealVoucher;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 $organiser = User::query()->where('email', 'organiser@example.com')->firstOrFail();
 
 $existing = Event::query()->where('name', 'Evaluation Simulated Event')->first();
 if ($existing) {
+    // redemptions are restricted from cascading away, so the evaluation
+    // event's own rows are cleared explicitly before it is rebuilt
+    DB::table('meal_redemptions')->where('event_id', $existing->id)->delete();
     $existing->delete();
     echo "Removed previous evaluation event.\n";
 }
