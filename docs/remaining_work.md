@@ -60,12 +60,20 @@ scanner app's history tab uses it; reports are organiser only.
 | 10/10/2026 | All four CSV exports checked against direct SQL, rows and totals; full evaluation rerun on the current code | [`907f237`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/907f237) | `tools/evaluation-results.json` |
 | 10/10/2026 | Dashboard freshness measured by injecting 20 check-ins at random moments and timing their appearance through the app's refresh cycle | [`094e5e1`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/094e5e1) | `tools/freshness-results.json` |
 
+### Documents
+
+| Date | Item | Commit |
+|---|---|---|
+| 10/10/2026 | Report and validation document: per-criterion status table and objective-by-objective statement in place of "every criterion met" and "all six objectives met" | `19c14e1` |
+| 10/10/2026 | Report and validation document: concurrency and export wording matched to the code and the new evidence, one run throughout, access control and offline replay covered | `c8e1557` |
+| 10/10/2026 | Report: proposal described as resubmitted and under review, backend as a standalone Laravel API with a check-in stub, the July history reconstruction stated, three concurrency-control sources added, AI disclosure by phase | `420b8ae` |
+| 10/10/2026 | Word and PDF deliverables rebuilt from the same source | `b4617f8` |
+| 10/10/2026 | Proposal v4: evaluation objective, the two literature corrections, and this account (Section 10) | tagged `final-resubmission` |
+
 ## Still to do
 
-| Item | Asked on | Due |
-|---|---|---|
-| Report and validation document: replace "every criterion met" with a per-criterion status table, and "all six objectives met" with an objective-by-objective statement | 116, 117 | 12/10/2026 |
-| Report and validation document: correct the concurrency and export-correctness wording to match the code and the new evidence; use one run throughout; drop "byte-exact", "780/780" and the unmeasured "no overhead" claim; present push delivery as single observations | 116, 117 | 12/10/2026 |
-| Report: describe the proposal as resubmitted and under review, the backend as a standalone Laravel API with a check-in stub, and the July history reconstruction; add the newer literature and concurrency-control sources; expand the AI disclosure by phase | 116 | 13/10/2026 |
-| Proposal v4: evaluation objective, the two literature corrections, and this account | 118 | 13/10/2026 |
-| Rebuild both PDFs from the same source, tag the final commit afresh, upload to the Final Report, validation and Project Proposal slots | 116, 117, 118 | 14/10/2026 |
+| Item | Due |
+|---|---|
+| Upload the proposal (v4) to the Project Proposal slot | 10/10/2026 |
+| Upload the final report and validation document to their slots; the final commit is tagged `final-resubmission` | 10/10/2026 |
+| Push delivery across a fleet of devices, a timed capacity alert, and the manual baseline: not possible within the project and stated as limitations in the report | Not scheduled |
