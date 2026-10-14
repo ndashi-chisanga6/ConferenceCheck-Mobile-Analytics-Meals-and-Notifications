@@ -2,7 +2,7 @@
 
 **Project:** ConferenceCheck Mobile: Analytics, Meals and Notifications (component 4.3b)
 **Student:** Ndashi Bwalya Chisanga (2021470105) · **Supervisor:** Mr. Mofya Phiri
-**Written:** 10 October 2026, after the supervisor's comments on submissions 116 (final report), 117 (validation document) and 118 (proposal v3)
+**Written:** 10 October 2026, after the supervisor's comments on submissions 117 (final report), 116 (validation document) and 118 (proposal v3)
 
 This is the dated account of remaining work asked for on the proposal. It
 lists what has been done since the comments, with the commit and test that
@@ -14,7 +14,7 @@ which is why each item below links its own commit.
 
 ## Done since the comments
 
-### Authorisation (submission 117, priority 1)
+### Authorisation (submission 116, priority 1)
 
 Each fix has a feature test in `tests/Feature/ConferenceApiTest.php` that
 expects 403 and was checked to fail against the code before the fix.
@@ -32,7 +32,7 @@ expects 403 and was checked to fail against the code before the fix.
 Scanners keep read access to the meal redemption history, because the
 scanner app's history tab uses it; reports are organiser only.
 
-### Backend correctness (submissions 116 and 117)
+### Backend correctness (submissions 117 and 116)
 
 | Date | Item | Commit | Test |
 |---|---|---|---|
@@ -44,7 +44,7 @@ scanner app's history tab uses it; reports are organiser only.
 | 09/10/2026 | Firebase demo mode is off by default, a missing configuration fails, and demo sends are recorded as `demo`, never `sent` | [`1f66e52`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/1f66e52) | `test_missing_firebase_config_fails_instead_of_faking_success`, `test_notification_send_in_demo_mode` |
 | 09/10/2026 | Pushes are sent after the recipient rows commit, outside the transaction | [`ab206f4`](https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications/commit/ab206f4) | `test_pushes_go_out_after_the_recipient_rows_are_committed` |
 
-### Offline replay (submissions 116 and 117)
+### Offline replay (submissions 117 and 116)
 
 | Date | Item | Commit | Test |
 |---|---|---|---|
@@ -70,10 +70,27 @@ scanner app's history tab uses it; reports are organiser only.
 | 10/10/2026 | Word and PDF deliverables rebuilt from the same source | `b4617f8` |
 | 10/10/2026 | Proposal v4: evaluation objective, the two literature corrections, and this account (Section 10) | tagged `final-resubmission` |
 
+## After the comments on submissions 144, 145 and 146 (14 October 2026)
+
+Proposal v4 (submission 144) was approved. Its Section 10 swaps two numbers:
+116 is the validation document and 117 the final report. They are corrected
+in this file; the approved proposal is left as submitted.
+
+| Date | Change |
+|---|---|
+| 14/10/2026 | Attendee app: My meals tab shows each meal voucher as a QR code with its category and status; three Flutter tests |
+| 14/10/2026 | Scanner: a meal scan queued offline now says the voucher is NOT redeemed and the meal must not be served |
+| 14/10/2026 | End-to-end voucher trial on an emulator: 200 then 409 (validation document Section 11) |
+| 14/10/2026 | Validation document: test-case table TC-01 to TC-55, freshness and export wording, build step in the commands |
+| 14/10/2026 | Report: contradictions fixed, Objective 2 and Figures 6 to 10 relabelled, offline service rule in 3.5, abstract cut to 262 words, AI disclosure with representative prompts |
+
 ## Still to do
 
 | Item | Due |
 |---|---|
-| Upload the proposal (v4) to the Project Proposal slot | 10/10/2026 |
-| Upload the final report and validation document to their slots; the final commit is tagged `final-resubmission` | 10/10/2026 |
+| Upload the corrected final report and validation document | 16/10/2026 |
+| Camera trial: the voucher from one phone read by the scanner camera on a second phone, recorded in Section 11 | before 19/10/2026 |
+| Rerun `php artisan db:seed` before the demonstration, since the seeded meal windows close two days after seeding | 19/10/2026 |
+| Restructure the report to the 2026 template (title page, approval, Chapter 4 analysis and design, Chapters 5 and 6, recommendations, Times New Roman 12 pt, signed declaration) | 23/10/2026 |
+| Slides and paper: use the corrected Section 2 wording for [3] wherever the proposal's Table 1 appears | with the slides |
 | Push delivery across a fleet of devices, a timed capacity alert, and the manual baseline: not possible within the project and stated as limitations in the report | Not scheduled |

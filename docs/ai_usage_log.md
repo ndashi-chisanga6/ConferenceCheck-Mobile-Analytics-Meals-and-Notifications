@@ -61,3 +61,15 @@ repository history, listed with its date in `docs/remaining_work.md`.
 | 09/10 to 10/10 | Offline replay fixes and Flutter replay tests | Code and tests written by Claude, reviewed and committed by the student |
 | 10/10 | Concurrency experiment, freshness measurement, SQL export checks | Designed, written and run by Claude at the student's direction; results checked by the student |
 | 10/10 | Revised report, validation document, remaining-work account | Drafted by Claude, reviewed and edited by the student |
+| 10/10 | Proposal v4 and its build script (`tools/build_proposal_v4.py`) | Script and revised text drafted by Claude, reviewed and edited by the student |
+| 14/10 | My meals screen and its tests; offline meal-scan message; device trial; test-case table; report and validation corrections | Code, tests and text written by Claude, reviewed and committed by the student |
+
+## Representative prompts
+
+Quoted from the session record:
+
+1. 07/10: the supervisor's validation-document comments pasted in full, then "what would we start with fixing", asking for small commits.
+2. 09/10 and 10/10: "do the next 6 commits" and "lets do another 6".
+3. 10/10: "for the next things if they are things to do with the validation report do them at once then generate word files".
+4. 14/10: the supervisor's comments on the proposal, report and validation document pasted in full, then "work on everything he wants us to".
+
