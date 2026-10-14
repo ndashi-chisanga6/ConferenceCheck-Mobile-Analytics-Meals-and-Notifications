@@ -4,7 +4,7 @@
 **Student:** Ndashi Bwalya Chisanga, computer number 2021470105
 **Supervisor:** Mr. Mofya Phiri
 **Repository:** https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications
-**Validated state:** tag `final-resubmission`
+**Validated state:** tag `resubmission-16-october`
 
 
 This document reports the validation results and describes the path that
@@ -13,8 +13,15 @@ and the acceptance criteria each run is held to (proposal Section 5, Table 3).
 Every number below is taken from a committed results file or from a named test
 or command output, and the source is named alongside it.
 
-This version replaces the one at tag `milestone-12-final-submission`. It
-answers the supervisor's comments on that version: the per-criterion status
+This version answers the supervisor's comments on the version at tag
+`final-resubmission` (submission 145): it adds the end-to-end voucher trial on
+a device (Section 11), a test-case table (Section 12), precise wording for the
+freshness and export results (Sections 0, 4 and 5), and the frontend build step
+in the commands (Section 10.2). It is measured against the approved proposal,
+v4 (submission 144).
+
+The version at `final-resubmission` in turn answered the comments on the one at
+tag `milestone-12-final-submission`: the per-criterion status
 replaces the earlier claim that every criterion was met, the concurrency
 result now comes from an experiment that can tell the design apart from a
 naive one, export correctness is checked against SQL rather than against
@@ -32,19 +39,21 @@ runs on a local PHP 8.5.8 / PostgreSQL 18.2 stack on 10 October 2026.
 | Section | Subject | Page |
 |---|---|---|
 | 0 | Headline results | 2 |
-| 0.1 | Auditable evidence | 3 |
-| 1 | Meal voucher redemption correctness | 5 |
+| 0.1 | Auditable evidence | 4 |
+| 1 | Meal voucher redemption correctness | 6 |
 | 2 | Session attendance and capacity correctness | 7 |
-| 3 | Latency against the proposal's targets | 7 |
-| 4 | Analytics dashboard freshness | 8 |
+| 3 | Latency against the proposal's targets | 8 |
+| 4 | Analytics dashboard freshness | 9 |
 | 5 | Export correctness | 9 |
-| 6 | Notification delivery | 9 |
-| 7 | Access control | 10 |
-| 8 | Offline replay | 11 |
-| 9 | Baseline comparison, and its limits | 12 |
-| 10 | Reproducibility | 13 |
-| 10.1 | The environment these commands assume | 13 |
-| 10.2 | Commands | 13 |
+| 6 | Notification delivery | 10 |
+| 7 | Access control | 11 |
+| 8 | Offline replay | 12 |
+| 9 | Baseline comparison, and its limits | 13 |
+| 10 | Reproducibility | 14 |
+| 10.1 | The environment these commands assume | 14 |
+| 10.2 | Commands | 14 |
+| 11 | End-to-end voucher trial on a device | 15 |
+| 12 | Test cases | 16 |
 
 ## 0. Headline results
 
@@ -57,16 +66,19 @@ API rather than through unit-level mocks.
 |---|---|---|---|
 | Duplicate redemption rejection, including concurrent submissions | 100% | 100/100 sequential re-scans refused; on PostgreSQL behind five server processes, 50/50 five-way races with exactly one redemption with the lock, the constraint or both in place; with both removed, 48/50 vouchers redeemed more than once (Section 1) | Met |
 | Scan validation latency | median < 500 ms, p95 < 1 s | voucher scan 145.3 ms / 261.0 ms (n=200); session scan 128.4 ms / 228.7 ms (n=40) | Met on loopback only (Section 3) |
-| Dashboard freshness | ≤ 30 s behind the database | 20 injected check-ins: median 18.1 s, p95 28.4 s, max 28.5 s, 20/20 within 30 s | Met in the measured run; by design the worst case is one 30 s cycle plus a fetch, fractionally over 30 s (Section 4) |
+| Dashboard freshness | ≤ 30 s behind the database | 20 injected check-ins, measured with a poller that reproduces the app's refresh, not the app on a device: median 18.1 s, p95 28.4 s, max 28.5 s | 20 of 20 within 30 s in the recorded run; not guaranteed by design (a rerun gave 19 of 20, one at 30.02 s) (Section 4) |
 | Capacity warning before 100% occupancy | warning delivered before full | two automated transition tests; one observation on an emulator | Partly met: shown, not timed |
 | Push delivery | ≥ 95% of online devices within 30 s | one device, one observed delivery of about 5 s | Not measured |
 | In-app inbox reach | 100% of recipients on next open | a recipient record for every recipient, inbox reads filtered to recipients and tested; not measured on devices | Partly met |
-| Export correctness | row counts and totals equal to the database | all four exports equal to direct SQL on row counts and on a total each (Section 5) | Met |
+| Export correctness | row counts and totals equal to the database | all four exports equal to direct SQL on row counts and on a total each; `notifications.csv` checked as 0 against 0, its real check being a unit test; the sessions total has one non-zero session of ten (Section 5) | Met, with those two limits |
 | Comparison with a manual baseline | measured against a staffed paper line | not run (Section 9) | Not run |
 
-Four criteria are met, one of them on loopback only; two are partly met; push
-delivery across a fleet was not measured; and the manual baseline was not
-run. Two further results test the guarantees the design rests on: all three
+Two criteria are met, one of them on loopback only, and export correctness is
+met with the two limits stated in its row; dashboard freshness held in the
+recorded run but is not guaranteed by design; two criteria are partly met; push
+delivery across a fleet was not measured; and the manual baseline was not run.
+The voucher flow also works end to end in the app, in one trial on an emulator
+with manual token entry (Section 11). Two further results test the guarantees the design rests on: all three
 categories were redeemable independently for 20 of 20 attendees, and 20 of 20
 sequential duplicate session scans were refused.
 
@@ -136,8 +148,12 @@ they pass. The 31 component tests are:
   `test_linking_an_attendee_record_does_not_demote_staff`,
   `test_scanner_cannot_download_reports`
 
+The suite was rerun on 14 October 2026, after `npm run build`, with the same
+result: 70 passed, 288 assertions.
+
 PHPStan level 7: clean. Pint: clean. Flutter: `flutter analyze` no issues,
-`flutter test` 27/27 passed.
+`flutter test` 30/30 passed (27 before 14 October, plus three for the My meals
+screen in `mobile/test/my_meals_screen_test.dart`).
 
 **Re-verification, 10 October 2026.** Every command in Section 10 was run on
 that date against the code at the validated state. The evaluation seed
@@ -322,15 +338,18 @@ a time at random moments through the check-in API, and times each from the
 start of the injecting request to the end of the first dashboard fetch that
 shows it.
 
-| Trials | Median | p95 | Max | Within 30 s |
-|---|---|---|---|---|
-| 20 | 18.1 s | 28.4 s | 28.5 s | 20/20 |
+| Run | Trials | Median | p95 | Max | Within 30 s |
+|---|---|---|---|---|---|
+| Recorded run, 10 October 2026 | 20 | 18.1 s | 28.4 s | 28.5 s | 20/20 |
+| Supervisor's rerun of the same script | 20 | 11.4 s | not reported | 30.02 s | 19/20 |
 
-This measures the data path to the app, polling plus API; it does not include
-the time Flutter takes to repaint. By design the worst case is one full 30 s
-cycle plus the duration of a fetch, so a check-in that lands just after a
-fetch starts can appear fractionally later than 30 s. None of the 20 random
-trials did, but the design does not guarantee a strict 30 s ceiling.
+The result is 20 of 20 within 30 s in the recorded run, not guaranteed by
+design. The measurement is a poller that reproduces the app's refresh, not the
+app on a device: it covers the data path, polling plus API, and not the time
+Flutter takes to repaint. By design the worst case is one full 30 s cycle plus
+the duration of a fetch, so a check-in that lands just after a fetch starts can
+appear fractionally later than 30 s. The supervisor's rerun hit exactly that
+case once, at 30.02 s.
 
 Source: `tools/freshness-results.json`.
 
@@ -346,12 +365,15 @@ SQL run directly on the database, on its row count and on one total per export.
 | `meals.csv` | rows | 280 | 280 | yes |
 | `meals.csv` | redemptions per category | 94 / 93 / 93 | 94 / 93 / 93 | yes |
 | `sessions.csv` | rows | 10 | 10 | yes |
-| `sessions.csv` | attendance per session | 40, then 0 for the other nine | same | yes |
+| `sessions.csv` | attendance per session | 40, then 0 for the other nine (one non-zero session of ten) | same | yes |
 | `notifications.csv` | rows | 0 | 0 | yes |
 | `notifications.csv` | total recipients | 0 | 0 | yes |
 
-The evaluation event has no notifications, so the two `notifications.csv`
-checks compare zero with zero and show only that the export is well formed. A
+The evaluation event has no notifications, so `notifications.csv` was checked
+as 0 against 0 in the run, which shows only that the export is well formed. Its
+real check is the unit test named below. The sessions total is also thin: only
+one of the ten sessions has any attendance, so it compares one non-zero value
+and nine zeros. A
 notification was not sent during the run because the local configuration uses
 live Firebase credentials. That export's row count is tested on seeded data,
 which does contain a notification, by `test_every_export_has_one_row_per_database_record`.
@@ -452,7 +474,15 @@ API:
 | a scan kept after an auth failure survives a restart and syncs later | a 401 survives a restart and syncs on the next run |
 
 These run against a fake API in the test harness; replay was not exercised on
-a device. Camera decoding of QR codes was checked by hand and not measured:
+a device.
+
+**Service rule for meal scans made offline.** A queued meal scan is not a
+redemption. The server has not checked the voucher, so the meal is not served
+until the server answers 200. The scanner now says so when it queues a meal
+scan: "No connection — voucher NOT redeemed. Do not serve this meal; the scan
+is saved and will be checked when back online." (`meal_scan_controller.dart`).
+The earlier message, "scan saved and will sync", read as though the meal could
+be served. Camera decoding of QR codes was checked by hand and not measured:
 `mobile/test/qr_parser_test.dart` tests only the trimming of a manually
 entered token.
 
@@ -517,9 +547,13 @@ These regenerate `tools/evaluation-results.json`,
 overwrite the recorded runs, so the figures quoted in this report come from the
 named runs committed in those files.
 
-Backend test suite:
+Backend test suite. Twelve of the starter kit's page tests need the frontend
+built first; without it they fail on the missing Vite manifest. The build calls
+`php artisan`, so PHP must be on `PATH` while it runs:
 
 ```
+npm install
+npm run build
 php artisan test
 ```
 
@@ -551,3 +585,119 @@ python tools/paginate_report.py
 
 `tools/paginate_report.py --check` fails if the page numbers printed in the
 contents lists no longer match the rendered documents.
+
+## 11. End-to-end voucher trial on a device
+
+Until 14 October 2026 this flow failed at its first step. The attendee app
+showed only the check-in and session pass (`ATTENDEE-DEMO-001`), and the meal
+scanner answered that code with 404 "Invalid meal voucher QR token.", because it
+is not a meal voucher. `Attendee.fromJson` ignored the `meal_vouchers` that
+`GET /events/{event}/attendees/me` already returned, and no screen showed them.
+Both are fixed: the model keeps the vouchers, and a My meals tab shows each one
+with its category and status, and an unused one as a QR code of its `qr_token`
+(`mobile/lib/features/attendee/presentation/my_meals_screen.dart`).
+
+**Setup.** One Android emulator, AVD `conference_check` (Pixel 7 profile,
+Android API 36, emulator 36.6.11), running a debug build of the app at the
+validated state. The backend was the local Laravel server on PostgreSQL 18.2,
+reached from the emulator at `10.0.2.2:8000`. Before the trial the demo seed
+was rerun (`php artisan db:seed`) to move the meal windows to the trial date.
+The seeded attendee's Breakfast and Lunch vouchers are seeded as redeemed, and
+Supper, `MEAL-DEMO-1-3`, as unused.
+
+**How the code was read.** By manual entry. Both roles ran in turn on the one
+emulator, signed in first as `attendee@example.com` and then as
+`scanner@example.com`, and an emulator's camera cannot see another screen. The
+QR code the attendee app showed was decoded off the device from the screenshot,
+with the `zxing-cpp` library, and reads `MEAL-DEMO-1-3`. Camera reading of the
+code by a second phone was not done in this trial.
+
+**Steps and responses, 14 October 2026 (times UTC):**
+
+| Step | Time | Action | Response |
+|---|---|---|---|
+| 1 | 18:07 | Attendee app, My meals tab | Supper shown Unused with a QR code; Lunch and Breakfast shown Redeemed with their times (report Figure 7) |
+| 2 | 18:09:25 | Scanner app, Meal scanner, `MEAL-DEMO-1-3` entered and submitted | 200, "Voucher redeemed successfully." (report Figure 9); voucher `redeemed`, `redeemed_at` 18:09:25 |
+| 3 | 18:10:04 | Same token submitted again | 409; the screen was closed before it was captured |
+| 4 | 18:11:18 | Same token submitted a third time | 409, "Meal voucher has already been redeemed or is not usable." (report Figure 10) |
+| 5 | 18:12 | Same token sent to the API directly, as the scanner | 409 with `status: redeemed`, `redeemed_at: 2026-10-14T18:09:25Z` |
+| 6 | 18:12 | `ATTENDEE-DEMO-001` sent to the meal scan endpoint | 404 "Invalid meal voucher QR token." |
+
+The 200 in step 2 and the 409s in steps 3 and 4 are read from the app's
+messages, which it shows only for those answers, and from the server's request
+log, which records the three requests at those times; step 5 shows the status
+code and body directly. **Result: pass**, on one emulator with manual entry.
+What it does not show is a camera reading the code, or two physical devices.
+
+## 12. Test cases
+
+Every test case in one table: the 31 component API tests (TC-01 to TC-31), the
+evaluation steps (TC-32 to TC-46), the Flutter tests that bear on the voucher
+flow and offline replay (TC-47 to TC-51), and the device trial (TC-52 to TC-55).
+API and Flutter results are from the runs on 14 October 2026; evaluation results
+are from the committed results files. The report's Chapter 6 and the slides use
+this table.
+
+| ID | What is tested | Expected result | Actual result | Pass/fail |
+|---|---|---|---|---|
+| TC-01 | login returns a token | 200 with a Sanctum token | 200 with token | Pass |
+| TC-02 | registration cannot choose the organiser role | account created as attendee | created as attendee | Pass |
+| TC-03 | analytics summary | 200 with the summary totals | 200, totals as seeded | Pass |
+| TC-04 | valid meal voucher scan | 200; voucher redeemed; one redemption row | as expected | Pass |
+| TC-05 | second scan of a redeemed voucher | 409 with the earlier redemption time | 409 with redeemed_at | Pass |
+| TC-06 | duplicate caught by the unique constraint | 409, not 500 | 409 | Pass |
+| TC-07 | unknown meal token | 404 Invalid meal voucher QR token | 404 | Pass |
+| TC-08 | redeeming one category leaves the others redeemable | other categories still 200 | 200 for each other category | Pass |
+| TC-09 | valid session attendance scan | 200; attendance recorded | as expected | Pass |
+| TC-10 | duplicate session scan | 409 duplicate | 409 | Pass |
+| TC-11 | check-in that loses a race | duplicate answer, not 500 | duplicate, no 500 | Pass |
+| TC-12 | session scan that loses a race | 409, not 500 | 409 | Pass |
+| TC-13 | notification send in demo mode | recorded as demo, never sent | demo | Pass |
+| TC-14 | missing Firebase config with demo mode off | send fails; nothing marked sent | failed | Pass |
+| TC-15 | custom notification target | rejected with 422 | 422 | Pass |
+| TC-16 | CSV report download | 200, text/csv attachment | as expected | Pass |
+| TC-17 | every export has one row per database record | row counts equal the database | equal for all four | Pass |
+| TC-18 | pushes go out after recipient rows commit | no push inside the transaction | as expected | Pass |
+| TC-19 | send through FCM v1 when configured | v1 request sent with OAuth token | as expected | Pass |
+| TC-20 | delivery recorded per recipient | sent / failed / pending per recipient | as expected | Pass |
+| TC-21 | session scan records the scanning device | device id stored | stored | Pass |
+| TC-22 | capacity threshold transitions alert organisers | warning and over-capacity pushes to organisers | both sent | Pass |
+| TC-23 | attendee fetches own QR token and vouchers | 200 with own token and meal_vouchers | as expected | Pass |
+| TC-24 | attendee on staff or organiser routes | 403 | 403 | Pass |
+| TC-25 | attendee opens another attendee's voucher | 403 | 403 | Pass |
+| TC-26 | notification read by a non-recipient | 403; list holds only own | 403 | Pass |
+| TC-27 | device token deleted by a non-owner | 403 | 403 | Pass |
+| TC-28 | linking an attendee record to a scanner | scanner keeps scanner role | role kept | Pass |
+| TC-29 | edit or delete a redemption, or cascade it away | refused; 409 on parent delete | refused / 409 | Pass |
+| TC-30 | scanner downloads a report | 403 | 403 | Pass |
+| TC-31 | attendees/me with no linked record | 404 | 404 | Pass |
+| TC-32 | 200 first scans of fresh vouchers | 200 of 200 accepted | 200 of 200 | Pass |
+| TC-33 | 100 sequential re-scans of a redeemed voucher | 100 of 100 refused (409) | 100 of 100 | Pass |
+| TC-34 | 20 cross-category attendees, three categories each | 60 of 60 accepted; repeat refused | 20 of 20 attendees | Pass |
+| TC-35 | 20 sequential duplicate session scans | 20 of 20 refused | 20 of 20 | Pass |
+| TC-36 | concurrency, lock and constraint on (as built), 50 races | one success per race | 50 of 50 | Pass |
+| TC-37 | concurrency, lock off, constraint on | one success per race | 50 of 50 | Pass |
+| TC-38 | concurrency, lock on, constraint off | one success per race | 50 of 50 | Pass |
+| TC-39 | concurrency negative control, both off | double redemption detected (expected to fail) | 48 of 50 redeemed more than once | Pass (control failed as designed) |
+| TC-40 | voucher scan latency, n=200 | median < 500 ms, p95 < 1 s | 145.3 ms / 261.0 ms (loopback) | Pass |
+| TC-41 | session scan latency, n=40 | median < 500 ms, p95 < 1 s | 128.4 ms / 228.7 ms (loopback) | Pass |
+| TC-42 | dashboard freshness, 20 injected check-ins (poller, not the app) | each visible within 30 s | 20 of 20 in recorded run; 19 of 20 in supervisor's rerun | Pass in recorded run; not guaranteed |
+| TC-43 | attendance.csv against SQL | rows and checked-in total equal | 500 / 40, equal | Pass |
+| TC-44 | meals.csv against SQL | rows and per-category totals equal | 280 / 94, 93, 93, equal | Pass |
+| TC-45 | sessions.csv against SQL | rows and per-session totals equal | 10 rows; one non-zero session, equal | Pass |
+| TC-46 | notifications.csv against SQL | rows and recipients equal | 0 against 0 (unit test is the real check) | Pass |
+| TC-47 | My meals parses vouchers from attendees/me | vouchers with category and status kept | as expected | Pass |
+| TC-48 | My meals shows a QR only for an unused voucher | one QR, for the unused voucher | one QR | Pass |
+| TC-49 | replay settles only on 404, 409 and 422 | other answers keep the scan | as expected | Pass |
+| TC-50 | queued scans survive a restart | replayed on the next run | as expected | Pass |
+| TC-51 | manual token trimming | surrounding spaces removed | as expected | Pass |
+| TC-52 | attendee app shows the meal voucher | Supper voucher shown as QR, status Unused | shown; QR decodes to MEAL-DEMO-1-3 | Pass |
+| TC-53 | first scan of MEAL-DEMO-1-3 from the scanner app | 200, Voucher redeemed successfully | 200; redeemed 18:09:25 UTC | Pass |
+| TC-54 | second scan of the same token | 409, already redeemed | 409, twice | Pass |
+| TC-55 | attendee pass token at the meal scanner | 404 Invalid meal voucher QR token | 404 | Pass |
+
+TC-42 measures a poller that reproduces the app's refresh, not the app on a
+device (Section 4). TC-46 compares zero with zero and is backed by TC-17.
+TC-40 and TC-41 were measured over loopback on one machine (Section 3).
+Not in the table because they were not run or not measured: the manual
+baseline, push delivery across a fleet of devices, and a timed capacity alert.
