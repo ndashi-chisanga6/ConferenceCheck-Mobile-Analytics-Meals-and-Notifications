@@ -55,7 +55,11 @@ class MealScanController extends Notifier<ScanState> {
             );
         ref.invalidate(pendingScanCountProvider);
         state = const ScanState(
-          message: 'No connection — scan saved and will sync when back online.',
+          // A queued meal scan is not a redemption: the server has not
+          // checked the voucher yet, so the meal must not be served.
+          message:
+              'No connection — voucher NOT redeemed. Do not serve this meal; '
+              'the scan is saved and will be checked when back online.',
           success: false,
           queued: true,
         );
