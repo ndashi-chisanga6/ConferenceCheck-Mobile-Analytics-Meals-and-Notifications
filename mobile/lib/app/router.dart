@@ -1,4 +1,5 @@
 import 'package:conference_check_mobile/features/attendee/presentation/attendee_home_screen.dart';
+import 'package:conference_check_mobile/features/attendee/presentation/my_meals_screen.dart';
 import 'package:conference_check_mobile/features/attendee/presentation/my_qr_screen.dart';
 import 'package:conference_check_mobile/features/auth/application/auth_providers.dart';
 import 'package:conference_check_mobile/features/auth/presentation/login_screen.dart';
@@ -183,6 +184,7 @@ class _RoleHomeScreenState extends ConsumerState<RoleHomeScreen> {
         NotificationsScreen(),
       ),
       _TabItem('My QR', 'My QR', Icons.qr_code_2, MyQrScreen()),
+      _TabItem('My meals', 'Meals', Icons.restaurant_outlined, MyMealsScreen()),
       _TabItem('Profile', 'Profile', Icons.person_outline, ProfileScreen()),
     ];
   }

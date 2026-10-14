@@ -32,6 +32,7 @@ class MealVoucher {
     required this.id,
     required this.qrToken,
     required this.status,
+    this.redeemedAt,
     this.attendee,
     this.category,
   });
@@ -39,6 +40,7 @@ class MealVoucher {
   final int id;
   final String qrToken;
   final String status;
+  final DateTime? redeemedAt;
   final Attendee? attendee;
   final MealCategory? category;
 
@@ -47,6 +49,7 @@ class MealVoucher {
       id: (json['id'] as num).toInt(),
       qrToken: json['qr_token']?.toString() ?? '',
       status: json['status']?.toString() ?? '',
+      redeemedAt: parseDate(json['redeemed_at']),
       attendee: json['attendee'] is Map<String, dynamic>
           ? Attendee.fromJson(json['attendee'] as Map<String, dynamic>)
           : null,
@@ -55,6 +58,8 @@ class MealVoucher {
           : null,
     );
   }
+
+  bool get isRedeemed => status == 'redeemed';
 }
 
 class MealRedemption {

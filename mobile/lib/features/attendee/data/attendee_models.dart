@@ -1,3 +1,5 @@
+import 'package:conference_check_mobile/features/meals/data/meal_models.dart';
+
 class Attendee {
   const Attendee({
     required this.id,
@@ -7,6 +9,7 @@ class Attendee {
     this.email,
     this.phone,
     this.userId,
+    this.mealVouchers = const [],
   });
 
   final int id;
@@ -17,6 +20,10 @@ class Attendee {
   final String? phone;
   final int? userId;
 
+  /// The attendee's own meal vouchers, one per meal category. Only present
+  /// when the API loads them (GET /events/{event}/attendees/me does).
+  final List<MealVoucher> mealVouchers;
+
   factory Attendee.fromJson(Map<String, dynamic> json) {
     return Attendee(
       id: (json['id'] as num).toInt(),
@@ -26,6 +33,10 @@ class Attendee {
       email: json['email']?.toString(),
       phone: json['phone']?.toString(),
       userId: (json['user_id'] as num?)?.toInt(),
+      mealVouchers: [
+        for (final item in json['meal_vouchers'] as List? ?? const [])
+          if (item is Map<String, dynamic>) MealVoucher.fromJson(item),
+      ],
     );
   }
 }
