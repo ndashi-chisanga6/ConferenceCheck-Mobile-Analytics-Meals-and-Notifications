@@ -85,17 +85,15 @@ report does not re-derive figures independently of it.
 | 9 | **Conclusion** | 24 |
 |  | References | 26 |
 | A | **Appendix A. Artificial intelligence usage disclosure** | 27 |
-| A.1 | Tool and scope | 27 |
-| A.2 | To 30 September 2026 | 27 |
-| A.3 | From 7 October 2026 | 27 |
-| A.4 | How the output was checked | 28 |
-| A.5 | Gap in the record | 28 |
+| A.1 | Use | 27 |
+| A.2 | Representative prompts | 27 |
+| A.3 | Checks and gaps | 28 |
 | B | **Appendix B. Defects found and fixed during the strict review** | 28 |
-| C | **Appendix C. Full evaluation figures** | 30 |
+| C | **Appendix C. Full evaluation figures** | 29 |
 | D | **Appendix D. Reproduction commands** | 32 |
-| E | **Appendix E. The running system, against each objective** | 34 |
-| E.1 | What these figures do and do not show | 44 |
-| F | **Appendix F. Reference verification record** | 45 |
+| E | **Appendix E. The running system, against each objective** | 33 |
+| E.1 | What these figures do and do not show | 43 |
+| F | **Appendix F. Reference verification record** | 44 |
 
 ## List of Tables
 
@@ -108,25 +106,25 @@ report does not re-derive figures independently of it.
 | 5 | Latency by endpoint against the proposal's targets | 6.4 | 20 |
 | 6 | Export correctness, each CSV export against SQL run directly on the database | 6.6 | 21 |
 | 7 | Status of each objective | 9 | 25 |
-| B1 | Defects found during review and their fixes | B | 29 |
-| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 30 |
-| F1 | Verification of every reference, including the one withdrawn | F | 45 |
+| B1 | Defects found during review and their fixes | B | 28 |
+| C1 | Full evaluation output, `tools/evaluation-results.json` | C | 29 |
+| F1 | Verification of every reference, including the one withdrawn | F | 44 |
 
 ## List of Figures
 
 | Figure | Title | Section | Page |
 |---|---|---|---|
 | 1 | System architecture and the component 4.3a / 4.3b boundary | 3.1 | 9 |
-| 2 | Organiser analytics dashboard | E | 35 |
-| 3 | Trends and per-category redemption | E | 36 |
-| 4 | Automatic capacity alerts on a device | E | 37 |
-| 5 | Organiser broadcast delivered end to end | E | 38 |
-| 6 | Attendee check-in and session pass (not a meal voucher) | E | 39 |
-| 7 | The attendee's meal vouchers in the app | E | 40 |
-| 8 | Meal categories and the per-device redemption trail | E | 41 |
-| 9 | Scanner accepting the voucher from Figure 7 | E | 42 |
-| 10 | The same voucher refused on a second attempt | E | 43 |
-| 11 | Report exports available to an organiser | E | 44 |
+| 2 | Organiser analytics dashboard | E | 34 |
+| 3 | Trends and per-category redemption | E | 35 |
+| 4 | Automatic capacity alerts on a device | E | 36 |
+| 5 | Organiser broadcast delivered end to end | E | 37 |
+| 6 | Attendee check-in and session pass (not a meal voucher) | E | 38 |
+| 7 | The attendee's meal vouchers in the app | E | 39 |
+| 8 | Meal categories and the per-device redemption trail | E | 40 |
+| 9 | Scanner accepting the voucher from Figure 7 | E | 41 |
+| 10 | The same voucher refused on a second attempt | E | 42 |
+| 11 | Report exports available to an organiser | E | 43 |
 
 
 ## Abstract
@@ -1202,69 +1200,33 @@ what it changed.
 
 ## Appendix A. Artificial intelligence usage disclosure
 
-### A.1 Tool and scope
+### A.1 Use
 
-The one AI tool used was Claude (Anthropic), through Claude Code. The proposal
-limited AI help to boilerplate, proofreading and questions about library APIs
-and syntax. That held until 30 September 2026. The work after the
-supervisor's comments, from 7 October, went beyond it, and is set out in A.3.
+The tool used was Claude (Anthropic), through Claude Code.
 
-### A.2 To 30 September 2026
-
-| Work | Use of AI |
+| Period | Use |
 |---|---|
-| Backend and Flutter application | Boilerplate and questions about library APIs |
-| Strict review (`docs/STRICT-REVIEW.md`) and evaluation tooling | Written by the student, with help from Claude |
-| Report and validation document | Written by the student; Claude used for proofreading |
+| To 30 September 2026 | Boilerplate, library and syntax questions, proofreading; help with the strict review and evaluation scripts |
+| 7 to 14 October 2026 | Code and tests for the fixes the supervisor asked for, the concurrency and freshness scripts, the My meals screen, `tools/build_proposal_v4.py`, and drafts of the revised report, validation document and proposal |
 
-### A.3 From 7 October 2026
+From 7 October this went beyond the proposal's scope (Section 9). The student
+chose what to fix and in what order, reviewed every change before committing
+it, and checked the test and experiment results. Each change is a commit in the
+repository history, and `docs/ai_usage_log.md` is the log.
 
-Working from the supervisor's comments, Claude:
+### A.2 Representative prompts
 
-- wrote most of the code changes and their tests: the access-control fixes,
-  the 409 handling and row locks on the scan paths, chunked exports, the
-  Firebase demo-mode and dispatch changes, the offline replay fixes, and,
-  on 14 October, the attendee's My meals screen and the offline meal-scan
-  message;
-- designed, wrote and ran the concurrency experiment and the freshness
-  measurement, and added the SQL export checks;
-- wrote `tools/build_proposal_v4.py`, which builds the proposal v4 documents;
-- drafted the revised text of this report, the validation document and the
-  proposal v4.
+1. 7 October: the supervisor's comments pasted in, then "what would we start
+   with fixing".
+2. 9 and 10 October: "do the next 6 commits".
+3. 14 October: the supervisor's comments pasted in, then "work on everything
+   he wants us to".
 
-The student decided what to fix and in what order, reviewed each change before
-committing it, and checked the test and experiment results. Each change is a
-commit in the repository history.
+### A.3 Checks and gaps
 
-**Representative prompts.** The student's instructions were short and
-directed the work rather than specifying the code. Typical ones, quoted from
-the session record:
-
-1. 7 October: the supervisor's comments on the validation document, pasted in
-   full, followed by "what would we start with fixing", asking for small
-   commits.
-2. 9 and 10 October: "do the next 6 commits" and "lets do another 6", each
-   working through the next items of the agreed fix list.
-3. 10 October: "for the next things if they are things to do with the
-   validation report do them at once then generate word files".
-4. 14 October: the supervisor's comments on the proposal, the report and the
-   validation document, pasted in full, followed by "work on everything he
-   wants us to".
-
-### A.4 How the output was checked
-
-Each fix has a test that fails against the earlier code and passes now. The
-concurrency experiment has a negative control, which failed as expected. The
-backend tests, PHPStan, Pint, `flutter analyze` and `flutter test` were run
-before each commit. The student is prepared to walk through
-`MealController::scanVoucher`, `tools/run-concurrency-experiment.py` and the
-offline replay rules at the presentation.
-
-### A.5 Gap in the record
-
-The per-use AI log the proposal promised (Section 9.4) was not kept before
-October. A.2 is the student's own account of that period. From October, the
-commit history and `docs/ai_usage_log.md` are the record.
+Each fix has a test that fails on the old code and passes now, and the
+concurrency experiment has a negative control that failed as expected. The
+per-use log promised in proposal Section 9.4 was not kept before October.
 
 ## Appendix B. Defects found and fixed during the strict review
 
