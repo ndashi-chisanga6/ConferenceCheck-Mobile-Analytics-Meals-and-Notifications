@@ -100,6 +100,8 @@ def heading_key(section: str, title: str) -> str:
     """The text the heading is expected to start with in the rendered document."""
     if not section:
         return title
+    if section.startswith("Chapter "):
+        return f"{section}: {title}"
     if section.startswith("Appendix ") or len(section) == 1 and section.isalpha():
         # The appendix rows carry the full heading in their title cell already.
         return title

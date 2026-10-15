@@ -84,13 +84,19 @@ in this file; the approved proposal is left as submitted.
 | 14/10/2026 | Validation document: test-case table TC-01 to TC-55, freshness and export wording, build step in the commands |
 | 14/10/2026 | Report: contradictions fixed, Objective 2 and Figures 6 to 10 relabelled, offline service rule in 3.5, abstract cut to 262 words, AI disclosure with representative prompts |
 
+## 15 October 2026
+
+| Date | Change |
+|---|---|
+| 15/10/2026 | Presentation on the department's 2026 template, with speaker notes for `scanVoucher`, the concurrency experiment and the replay rule |
+| 15/10/2026 | Report restructured to the 2026 template: title page, approval, acknowledgements, abbreviations, keywords; Chapter 4 analysis and design with an ER diagram (`tools/draw_er_diagram.py`); Chapters 5 to 7 reorganised; test-case table in 6.2 and objective evaluation in 6.7; Times New Roman 12 pt at 1.5 spacing |
+
 ## Still to do
 
 | Item | Due |
 |---|---|
+| Fill in the degree programme on the title page and sign the Declaration | 16/10/2026 |
 | Upload the corrected final report and validation document | 16/10/2026 |
 | Camera trial: the voucher from one phone read by the scanner camera on a second phone, recorded in Section 11 | before 19/10/2026 |
 | Rerun `php artisan db:seed` before the demonstration, since the seeded meal windows close two days after seeding | 19/10/2026 |
-| Restructure the report to the 2026 template (title page, approval, Chapter 4 analysis and design, Chapters 5 and 6, recommendations, Times New Roman 12 pt, signed declaration) | 23/10/2026 |
-| Slides and paper: use the corrected Section 2 wording for [3] wherever the proposal's Table 1 appears | with the slides |
 | Push delivery across a fleet of devices, a timed capacity alert, and the manual baseline: not possible within the project and stated as limitations in the report | Not scheduled |

@@ -616,10 +616,10 @@ code by a second phone was not done in this trial.
 
 | Step | Time | Action | Response |
 |---|---|---|---|
-| 1 | 18:07 | Attendee app, My meals tab | Supper shown Unused with a QR code; Lunch and Breakfast shown Redeemed with their times (report Figure 7) |
-| 2 | 18:09:25 | Scanner app, Meal scanner, `MEAL-DEMO-1-3` entered and submitted | 200, "Voucher redeemed successfully." (report Figure 9); voucher `redeemed`, `redeemed_at` 18:09:25 |
+| 1 | 18:07 | Attendee app, My meals tab | Supper shown Unused with a QR code; Lunch and Breakfast shown Redeemed with their times (report Figure E6) |
+| 2 | 18:09:25 | Scanner app, Meal scanner, `MEAL-DEMO-1-3` entered and submitted | 200, "Voucher redeemed successfully." (report Figure E8); voucher `redeemed`, `redeemed_at` 18:09:25 |
 | 3 | 18:10:04 | Same token submitted again | 409; the screen was closed before it was captured |
-| 4 | 18:11:18 | Same token submitted a third time | 409, "Meal voucher has already been redeemed or is not usable." (report Figure 10) |
+| 4 | 18:11:18 | Same token submitted a third time | 409, "Meal voucher has already been redeemed or is not usable." (report Figure E9) |
 | 5 | 18:12 | Same token sent to the API directly, as the scanner | 409 with `status: redeemed`, `redeemed_at: 2026-10-14T18:09:25Z` |
 | 6 | 18:12 | `ATTENDEE-DEMO-001` sent to the meal scan endpoint | 404 "Invalid meal voucher QR token." |
 

@@ -31,7 +31,7 @@ from docx.oxml import OxmlElement
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-CAPTION_PATTERN = re.compile(r"^(Table|Figure) [A-D]?\d+\.")
+CAPTION_PATTERN = re.compile(r"^(Table|Figure) [A-F]?\d+(\.\d+)?\.")
 
 AUTHOR = "Ndashi Bwalya Chisanga"
 
@@ -60,6 +60,10 @@ class Deliverable:
     source: str
     target: str
     title: str
+    # The final report follows the department's 2026 template: Times New
+    # Roman 12 pt at 1.5 line spacing, a centred title page, and each chapter
+    # starting on a new page.
+    department_format: bool = False
 
     @property
     def source_path(self) -> Path:
@@ -79,6 +83,7 @@ DELIVERABLES = (
             "Fraud-Resistant Meal Voucher Redemption and Real-Time Operational Analytics "
             "for Conference Management: Design and Evaluation of ConferenceCheck Mobile"
         ),
+        department_format=True,
     ),
     Deliverable(
         key="validation",
@@ -364,6 +369,76 @@ def add_page_numbers(path: Path) -> None:
     document.save(str(path))
 
 
+BODY_FONT = "Times New Roman"
+# Paragraph styles pandoc uses for running text; tables use "Compact" and stay
+# single-spaced so a long table does not double in length.
+SPACED_STYLES = ("Normal", "Body Text", "First Paragraph", "Abstract", "Block Text")
+
+
+def _set_font(style, size=None) -> None:
+    style.font.name = BODY_FONT
+    fonts = style.element.get_or_add_rPr().get_or_add_rFonts()
+    for attribute in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
+        fonts.set(_qn(attribute), BODY_FONT)
+    for theme in ("w:asciiTheme", "w:hAnsiTheme", "w:cstheme", "w:eastAsiaTheme"):
+        fonts.attrib.pop(_qn(theme), None)
+    if size is not None:
+        style.font.size = Pt(size)
+
+
+def apply_department_format(path: Path, title: str) -> None:
+    """Times New Roman 12 pt at 1.5 spacing, centred title page, chapters on new pages."""
+    document = Document(str(path))
+    styles = {style.name: style for style in document.styles}
+    for name, style in styles.items():
+        if style.type != 1 or name in ("Source Code", "Verbatim Char"):
+            continue
+        if name.startswith("Heading") or name in ("Title", "Subtitle", "Compact", "Caption",
+                                                  "Table Caption", "Image Caption") or name in SPACED_STYLES:
+            _set_font(style)
+    for name in SPACED_STYLES:
+        if name in styles:
+            _set_font(styles[name], 12)
+            styles[name].paragraph_format.line_spacing = 1.5
+    if "Compact" in styles:
+        _set_font(styles["Compact"], BODY_POINTS)
+        styles["Compact"].paragraph_format.line_spacing = 1.0
+    for level, size in (("Heading 1", 16), ("Heading 2", 14), ("Heading 3", 12)):
+        if level in styles:
+            _set_font(styles[level], size)
+            styles[level].font.color.rgb = None
+            styles[level].font.bold = True
+    if "Title" in styles:
+        _set_font(styles["Title"], 18)
+        styles["Title"].font.bold = True
+        styles["Title"].font.color.rgb = None
+
+    first_heading = True
+    on_title_page = True
+    for paragraph in document.paragraphs:
+        style = paragraph.style.name if paragraph.style is not None else ""
+        if style == "Heading 1":
+            on_title_page = False
+            if not first_heading:
+                paragraph.paragraph_format.page_break_before = True
+            else:
+                paragraph.paragraph_format.page_break_before = True
+                first_heading = False
+        elif on_title_page:
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            paragraph.paragraph_format.space_after = Pt(18)
+            # pandoc only makes the first line of a document its Title, and
+            # the university's name comes first here, so the project title is
+            # set by hand
+            if paragraph.text.strip() == title:
+                paragraph.paragraph_format.space_before = Pt(36)
+                paragraph.paragraph_format.space_after = Pt(36)
+                for run in paragraph.runs:
+                    run.font.bold = True
+                    run.font.size = Pt(18)
+    document.save(str(path))
+
+
 def set_properties(path: Path, title: str) -> None:
     """Name the author on the document itself.
 
@@ -390,6 +465,8 @@ def build(deliverable: Deliverable) -> None:
     figures = fit_images(deliverable.target_path)
     captions = align_captions(deliverable.target_path)
     add_page_numbers(deliverable.target_path)
+    if deliverable.department_format:
+        apply_department_format(deliverable.target_path, deliverable.title)
     set_properties(deliverable.target_path, deliverable.title)
     size = deliverable.target_path.stat().st_size
     print(f"wrote {deliverable.target} ({size:,} bytes, {fitted} table(s) fitted, "
