@@ -1207,7 +1207,7 @@ The tool used was Claude (Anthropic), through Claude Code.
 | Period | Use |
 |---|---|
 | To 30 September 2026 | Boilerplate, library and syntax questions, proofreading; help with the strict review and evaluation scripts |
-| 7 to 14 October 2026 | Code and tests for the fixes the supervisor asked for, the concurrency and freshness scripts, the My meals screen, `tools/build_proposal_v4.py`, and drafts of the revised report, validation document and proposal |
+| 7 to 14 October 2026 | Code and tests for the fixes the supervisor asked for; the design and scripts of the concurrency and freshness experiments; the My meals screen, `tools/build_proposal_v4.py`, and drafts of the revised report, validation document and proposal |
 
 From 7 October this went beyond the proposal's scope (Section 9). The student
 chose what to fix and in what order, reviewed every change before committing
