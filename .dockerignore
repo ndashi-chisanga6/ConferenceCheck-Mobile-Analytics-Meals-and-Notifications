@@ -1,0 +1,9 @@
+.git
+node_modules
+vendor
+mobile
+.env
+public/build
+storage/logs/*
+tests
+docs
