@@ -439,6 +439,111 @@ def apply_department_format(path: Path, title: str) -> None:
     document.save(str(path))
 
 
+CREST = REPO_ROOT / "tools/assets/unza-crest.jpeg"
+DEGREE = "Bachelor of Science in Computer Science"
+COVER_ROWS = (
+    ("NAME:", "NDASHI BWALYA CHISANGA"),
+    ("COMPUTER NUMBER:", "2021470105"),
+    ("SUPERVISOR:", "Mr. Mofya Phiri"),
+    ("REPOSITORY TAG:", "resubmission-16-october"),
+    ("DATE:", "October 2026"),
+)
+
+
+def _cover_paragraph(document, text, size, bold=False, underline=False, after=12):
+    paragraph = document.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.paragraph_format.space_after = Pt(after)
+    paragraph.paragraph_format.space_before = Pt(0)
+    paragraph.paragraph_format.line_spacing = 1.0
+    run = paragraph.add_run(text)
+    run.font.size = Pt(size)
+    run.bold = bold
+    run.underline = underline
+    return paragraph
+
+
+def build_cover(path: Path, title: str) -> None:
+    """Replace the plain title block with the crest cover used by the department."""
+    document = Document(str(path))
+    body = document.element.body
+    first = next(p for p in document.paragraphs if p.style is not None and p.style.name == "Heading 1")
+    for element in list(body):
+        if element is first._element:
+            break
+        if element.tag != _qn("w:sectPr"):
+            body.remove(element)
+
+    crest = document.add_paragraph()
+    crest.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    crest.paragraph_format.space_before = Pt(48)
+    crest.paragraph_format.space_after = Pt(24)
+    crest.add_run().add_picture(str(CREST), width=Inches(1.9))
+    new = [crest._element]
+    for text, size, bold, underline, after in (
+        ("THE UNIVERSITY OF ZAMBIA", 22, True, False, 14),
+        ("SCHOOL OF NATURAL AND APPLIED SCIENCES", 15, False, False, 10),
+        ("DEPARTMENT OF COMPUTING AND INFORMATICS", 15, False, False, 24),
+        (title, 16, True, True, 4),
+        ("FINAL YEAR PROJECT REPORT", 16, True, True, 10),
+        ("A report submitted in partial fulfilment of the requirements for the degree of "
+         + DEGREE, 12, False, False, 4),
+    ):
+        new.append(_cover_paragraph(document, text, size, bold, underline, after)._element)
+    new.append(_cover_paragraph(document, "Academic Year 2026", 12, True, False, 18)._element)
+
+    table = document.add_table(rows=0, cols=2)
+    for label, value in COVER_ROWS:
+        cells = table.add_row().cells
+        for cell, text, width in ((cells[0], label, 2.4), (cells[1], value, 3.8)):
+            cell.width = Inches(width)
+            paragraph = cell.paragraphs[0]
+            paragraph.paragraph_format.space_after = Pt(8)
+            paragraph.paragraph_format.line_spacing = 1.0
+            paragraph.add_run(text).font.size = Pt(12)
+    table_properties = table._tbl.tblPr
+    for existing in table_properties.findall(_qn("w:tblBorders")):
+        table_properties.remove(existing)
+    no_borders = OxmlElement("w:tblBorders")
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        edge = OxmlElement(f"w:{side}")
+        edge.set(_qn("w:val"), "nil")
+        no_borders.append(edge)
+    table_properties.append(no_borders)
+    # Without this the table style rules off the first row as a header.
+    for look in table_properties.findall(_qn("w:tblLook")):
+        table_properties.remove(look)
+    look = OxmlElement("w:tblLook")
+    for key in ("firstRow", "lastRow", "firstColumn", "lastColumn"):
+        look.set(_qn(f"w:{key}"), "0")
+    look.set(_qn("w:val"), "0000")
+    table_properties.append(look)
+    new.append(table._tbl)
+
+    for element in new:
+        body.remove(element)
+        first._element.addprevious(element)
+
+    # Frame the first page only.
+    section = body.find(_qn("w:sectPr"))
+    for existing in section.findall(_qn("w:pgBorders")):
+        section.remove(existing)
+    borders = OxmlElement("w:pgBorders")
+    borders.set(_qn("w:display"), "firstPage")
+    borders.set(_qn("w:offsetFrom"), "page")
+    for side in ("top", "left", "bottom", "right"):
+        edge = OxmlElement(f"w:{side}")
+        for key, value in (("val", "single"), ("sz", "4"), ("space", "24"), ("color", "auto")):
+            edge.set(_qn(f"w:{key}"), value)
+        borders.append(edge)
+    anchor = section.find(_qn("w:pgMar"))
+    if anchor is not None:
+        anchor.addnext(borders)
+    else:
+        section.append(borders)
+    document.save(str(path))
+
+
 def set_properties(path: Path, title: str) -> None:
     """Name the author on the document itself.
 
@@ -467,6 +572,7 @@ def build(deliverable: Deliverable) -> None:
     add_page_numbers(deliverable.target_path)
     if deliverable.department_format:
         apply_department_format(deliverable.target_path, deliverable.title)
+        build_cover(deliverable.target_path, deliverable.title)
     set_properties(deliverable.target_path, deliverable.title)
     size = deliverable.target_path.stat().st_size
     print(f"wrote {deliverable.target} ({size:,} bytes, {fitted} table(s) fitted, "

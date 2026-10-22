@@ -6,7 +6,7 @@
 
 # Fraud-Resistant Meal Voucher Redemption and Real-Time Operational Analytics for Conference Management: Design and Evaluation of ConferenceCheck Mobile
 
-A final year project report submitted in partial fulfilment of the requirements for the award of the degree of [DEGREE PROGRAMME: to be completed by the student]
+A final year project report submitted in partial fulfilment of the requirements for the award of the degree of Bachelor of Science in Computer Science
 
 **Ndashi Bwalya Chisanga**
 
@@ -17,6 +17,8 @@ Supervisor: Mr. Mofya Phiri
 October 2026
 
 Repository: https://github.com/ndashi-chisanga6/ConferenceCheck-Mobile-Analytics-Meals-and-Notifications
+
+Tag: `resubmission-16-october`
 
 ## Declaration
 
@@ -2032,10 +2034,10 @@ python tools/paginate_report.py
 `tools/paginate_report.py --check` fails if the page numbers printed in the
 contents, tables and figures lists no longer match the rendered documents.
 
-Validated state, and the commit it resolves to:
+Validated state, tag `resubmission-16-october`, and the commit it resolves to:
 
 ```bash
-git rev-list -n1 final-resubmission
+git rev-list -n1 resubmission-16-october
 ```
 
 ## Appendix E. The running system, against each objective
