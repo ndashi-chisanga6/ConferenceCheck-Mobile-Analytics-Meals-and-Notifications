@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -137,15 +138,23 @@ def read_pages(pdf_path: Path) -> list[str]:
 
 
 def export_pdf(target: Target, pdf_path: Path) -> None:
-    script = EXPORT.format(
-        docx=str(target.docx_path).replace("'", "''"),
-        pdf=str(pdf_path).replace("'", "''"),
-    )
-    subprocess.run(
-        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-        check=True,
-        capture_output=True,
-    )
+    # Word opened from the Desktop folder can stop on a hidden prompt and never
+    # return, so it is given a copy in a temporary folder to open instead.
+    with tempfile.TemporaryDirectory() as workdir:
+        copy = Path(workdir) / "report.docx"
+        output = Path(workdir) / "report.pdf"
+        shutil.copyfile(target.docx_path, copy)
+        script = EXPORT.format(
+            docx=str(copy).replace("'", "''"),
+            pdf=str(output).replace("'", "''"),
+        )
+        subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            check=True,
+            capture_output=True,
+            timeout=300,
+        )
+        shutil.copyfile(output, pdf_path)
 
 
 def build_docx(target: Target) -> None:
