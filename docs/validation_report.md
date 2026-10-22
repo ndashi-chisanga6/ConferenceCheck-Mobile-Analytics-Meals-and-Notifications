@@ -90,16 +90,16 @@ against `tools/seed-evaluation-event.php`), `tools/concurrency-results.json`
 
 ## 0.1 Auditable evidence
 
-**Validated state.** Tag `final-resubmission`. The exact commit it resolves to
+**Validated state.** Tag `resubmission-16-october`. The exact commit it resolves to
 is verifiable with:
 
 ```bash
-git rev-list -n1 final-resubmission
+git rev-list -n1 resubmission-16-october
 ```
 
-(`final-resubmission` is an annotated tag; a bare `git rev-parse` on it returns
+(`resubmission-16-october` is an annotated tag; a bare `git rev-parse` on it returns
 the tag object's own hash, not the commit, so use `rev-list -n1` or
-`rev-parse final-resubmission^{commit}` to resolve to the commit.)
+`rev-parse resubmission-16-october^{commit}` to resolve to the commit.)
 
 **Test suite.** Command and output, run on PHP 8.5.8 with PostgreSQL 18.2 on
 10 October 2026:
